@@ -19,7 +19,7 @@ Playground（試玩）→ SDK / IDE 擴充（本機開發）→ CLI 部署到 AW
 | # | 主題 | 一句話定位 | 狀態 |
 |---|------|-----------|------|
 | 00 | [總覽](00-overview/) | 定位、名詞、模型版本、介面、計費、跟其他瀏覽器自動化方案的比較 | ✅ 完成 |
-| 01 | SDK | `act()` 與 agent loop、結構化輸出、prompt 寫法、平行 session | ⏳ 待研究 |
+| 01 | [SDK](01-sdk/) | `act()` 與 agent loop、結構化輸出、prompt 寫法、平行 session | ✅ 完成 |
 | 02 | 部署與維運 | 部署 workflow、檢視 run、監控、CloudTrail、配額 | ⏳ 待研究 |
 | 03 | HITL 與工具 | 真人接手、API / MCP 工具、Strands | ⏳ 待研究 |
 | 04 | 跟 AgentCore 整合 | 在 AgentCore Runtime / Browser 上跑 Nova Act | ⏳ 待研究 |

@@ -21,7 +21,7 @@ import re
 FORBIDDEN_TOOLS = {"AdminTarget___delete_user"}
 PII_PATTERNS = {
     "email": re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"),
-    "tw_mobile": re.compile(r"\b09\d{2}-?\d{3}-?\d{3}\b"),
+    "tw_mobile": re.compile(r"(?<!\d)09\d{2}-?\d{3}-?\d{3}(?!\d)"),
 }
 
 
