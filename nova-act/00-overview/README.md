@@ -137,6 +137,8 @@ def my_flow():
 | 每個 act 最多幾步 | 200 | 否 |
 | Act timeout | 24 小時 | 否 |
 | Workflow run timeout | 1 週 | 否 |
+
+⚠️ AWS AI Service Card 寫的是「每個任務最多 100 步、瀏覽器 session 最長 30 分鐘」，跟上表不一致，比較見 [05](../05-security/README.md#上限與行為邊界的矛盾)。
 | 每個 act 最多幾個工具 | 100（tool spec 上限 350 KB） | 否 |
 
 > 推論：`InvokeActStep` 5 TPS 是平行擴展時最先碰到的上限。假設每一步大約 2–5 秒（這是假設，官方沒有公布），5 TPS 大約能撐 10–25 個同時在跑的 session。要跑一大批 agent 之前，先申請提高這個配額。

@@ -23,7 +23,7 @@ Playground（試玩）→ SDK / IDE 擴充（本機開發）→ CLI 部署到 AW
 | 02 | [部署與維運](02-deploy-operate/) | 部署 workflow、檢視 run、監控、CloudTrail、配額 | ✅ 完成 |
 | 03 | [HITL 與工具](03-hitl-tools/) | 真人接手、API / MCP 工具、Strands | ✅ 完成 |
 | 04 | [跟 AgentCore 整合](04-agentcore/) | 在 AgentCore Runtime / Browser 上跑 Nova Act | ✅ 完成 |
-| 05 | 安全 | IAM、資料保護、prompt injection、負責任使用 | ⏳ 待研究 |
+| 05 | [安全](05-security/) | IAM、資料保護、prompt injection、負責任使用 | ✅ 完成 |
 
 每篇最後的「延伸調研方向」，範圍限於 Nova Act 已研究的篇章（可引用已完成的 AgentCore 00–09、90）。
 
