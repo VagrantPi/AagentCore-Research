@@ -231,15 +231,15 @@ sequenceDiagram
 | Return of control | Harness 的 inline function tools |
 
 - 官方提供了遷移工具：[agent toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) 裡的 `amazon-bedrock` skill，可以讓 coding assistant 協助完成遷移。
-- 另外，網路文章提到 2026-04 發表的 **Bedrock Managed Agents**（limited preview），是以 OpenAI agent harness 為基礎、跑在 AgentCore Runtime 上的產品。⚠️ 這點**尚未在官方文件中確認**，僅供參考。
+- 另外還有 **Bedrock Managed Agents（with OpenAI，預覽中）**：由 AWS 執行 OpenAI Codex 的 harness，需要執行指令時交給你帳號裡的 AgentCore Runtime 處理。~~當初標註「尚未在官方文件中確認」~~，後續已在官方文件中確認，細節見 [90](../90-integrations/README.md#延伸bedrock-managed-agentswith-openai預覽中)。
 
 ## 目錄缺口
 
-官方元件清單中，有三個目前**在本 repo 還沒有對應資料夾**：
+官方元件清單中，有三個**沒有獨立的資料夾**，分別併入以下篇章：
 
-- **Harness**：分量很重，而且是官方建議的起點。目前在本篇與 01-runtime 中一併討論。
-- **Optimization**：建立在 Evaluations 之上，可以放進 07 一起研究。
-- **Registry**：組織層級的治理工具。
+- **Harness**：見本篇的[延伸：Harness 與 Runtime 的選擇細節](harness-vs-runtime.md)。
+- **Optimization**：併入 [07-evaluations](../07-evaluations/README.md#optimization從評估結果到改善)。
+- **Registry**：併入 [03-gateway](../03-gateway/README.md#aws-agent-registry組織層級的目錄)。
 
 ## 延伸調研
 

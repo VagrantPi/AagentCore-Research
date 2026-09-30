@@ -28,7 +28,11 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 | 07 | [Evaluations](07-evaluations/) | agent 品質評估與 Optimization（建議 + A/B test） | ✅ 完成 |
 | 08 | [Policy](08-policy/) | 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails） | ✅ 完成 |
 | 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | ✅ 完成 |
-| 90 | [框架整合](90-integrations/) | Strands、LangGraph、Claude Agent SDK 等 | 未開始 |
+| 90 | [框架整合](90-integrations/) | 框架 × 元件對照：Strands、LangGraph、Claude Agent SDK 等 | ✅ 完成 |
+
+官方元件清單中的 Harness、Optimization、Registry 沒有獨立的資料夾，分別併入 [00 延伸](00-overview/harness-vs-runtime.md)、[07](07-evaluations/)、[03](03-gateway/)。
+
+每篇文件的最後都有「延伸調研方向」，列出三個可以繼續深入的題目。
 
 ## 目錄慣例
 
