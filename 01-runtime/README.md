@@ -253,12 +253,14 @@ app.complete_async_task(task_id)         # 所有任務完成後，/ping 會回�
 - [x] 長時間執行 / 非同步任務的處理方式
 - [x] 冷啟動與效能（官方沒有數字，待實驗）
 
+## 延伸調研
+
+- [用 Runtime 做 coding agent 的架構設計](coding-agent-architecture.md)：工作區放哪裡、版本更新會清空工作區的因應、憑證與 prompt injection、Harness 還是 Runtime
+- [Instances 上的多 agent 協作](instances-multi-agent.md)：隔離邊界、權限疊加、適用情境、多 agent 模式比較
+
 ## 實驗
 
-需要時再建立 `experiments/`。候選題目：
-
-- 實際量測冷啟動時間：V1 vs V2 × container vs direct code × PUBLIC vs VPC
-- 驗證 container 部署的 session 建立速率，到底是 1.6/s 還是 25/s
+- [冷啟動與 session 建立速率](experiments/cold-start/README.md)：實驗工具已完成、本機驗證通過，**尚未在 AWS 上實跑**（撰寫時沒有 AWS 憑證）。矩陣為 V1/V2 × container/zip × PUBLIC/VPC，外加大 image，並用來驗證 V2 snapshot 的狀態重複問題，以及 1.6/s 與 25/s 的文件矛盾
 
 ## 參考資料
 
@@ -274,3 +276,11 @@ app.complete_async_task(task_id)         # 所有任務完成後，/ping 會回�
 - [Security best practices](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-security-best-practices.html)
 - [Custom headers](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-header-allowlist.html)
 - [Quotas](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html)
+
+## 延伸調研方向
+
+範圍在 00–01 之內，以 01 為主：
+
+1. **Runtime 的版本與 endpoint 上線策略：** 怎麼用不可變版本加上具名 endpoint 做 canary 或藍綠部署；舊 session 最長會跑舊版 8 小時，這段新舊並存期間，API 相容性該怎麼設計；以及 V2 更新要等好幾分鐘，CI/CD 流程要怎麼因應。
+2. **Session 和使用者綁定的後端參考設計：** session ID 怎麼產生、存放、過期；每個使用者的 session 數量上限；如何用 CloudTrail 偵測有人存取了別人的 session；以及「每個租戶一個 IAM principal」的做法怎麼落地。
+3. **Runtime 的成本模型實算：** 以 coding agent、客服 agent 這兩種工作負載為例，比較 V1 / V2 / Instances 在不同閒置逾時設定下的月費，重點看「記憶體閒置時仍然計費」的影響。

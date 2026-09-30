@@ -265,3 +265,11 @@ sequenceDiagram
 - [Quotas](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html)
 - [Bedrock Agents Classic maintenance mode](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html)
 - [awslabs/agentcore-samples](https://github.com/awslabs/agentcore-samples)
+
+## 延伸調研方向
+
+範圍限於 00：
+
+1. **完整月成本試算：** 以每月 10 萬個 session 的客服情境，加總 AgentCore 各項費用與模型 token 費用，看 AgentCore 本身佔多少比例。
+2. **Harness 的安全模型：** agent 擁有 root shell 時，IAM、`allowedTools`、VPC、hooks 怎麼組成縱深防禦，以及官方把哪些責任劃給使用者（shared responsibility）。
+3. **從 Bedrock Agents Classic 遷移的實際路徑：** 自動遷移 skill 會檢查什麼、哪些功能無法直接對應（分階段的 prompt override、依路由分派的多 agent 協作），以及各自的替代寫法。
