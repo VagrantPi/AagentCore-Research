@@ -26,7 +26,7 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 | 05 | [Built-in Tools](05-built-in-tools/) | Code Interpreter、Browser、Web Search | ✅ 完成 |
 | 06 | [Observability](06-observability/) | OTel 追蹤與監控 | ✅ 完成 |
 | 07 | [Evaluations](07-evaluations/) | agent 品質評估與 Optimization（建議 + A/B test） | ✅ 完成 |
-| 08 | [Policy](08-policy/) | 用 Cedar 做細粒度存取控制 | 未開始 |
+| 08 | [Policy](08-policy/) | 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails） | ✅ 完成 |
 | 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | 未開始 |
 | 90 | [框架整合](90-integrations/) | Strands、LangGraph、Claude Agent SDK 等 | 未開始 |
 
