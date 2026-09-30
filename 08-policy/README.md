@@ -16,9 +16,9 @@
 - **Cedar 的 schema 會從 gateway 的工具定義自動產生：** 建立 policy 時就會先驗證，如果引用了不存在的工具或欄位會直接擋下；另外還用**自動推理**找出「永遠允許」或「永遠拒絕」這類有問題的 policy。
 - **三個超越傳統存取控制的能力：**
   - **Temporal**（Dogwood）：「必須先驗證身分才能退款」「一小時內最多 N 次」這類**有狀態**的規則。
-  - **Guardrails in policy**：用 Bedrock Guardrails 的分數擋下 prompt injection 或個資外洩；還有新的 **`suppressOutput`** 效果，可以遮蔽工具的輸出。
+  - **Guardrails in policy**：用 Bedrock Guardrails 的分數擋下 prompt injection 或個資外洩；還有新的 **`suppressOutput`** 效果，工具輸出違規時**整個拿掉**（不是只遮掉部分內容，見[延伸](guardrails-calibration.md#suppressoutput-實際上做什麼)）。
   - **用自然語言撰寫**（NL2Cedar）：用一般的語言描述規則，由服務轉成 Cedar。
-- **上線流程：** 先用 `LOG_ONLY` 模式觀察，再切換到 `ENFORCE`。⚠️ **有 `UpdateGateway` 權限的人，就能把模式切回 `LOG_ONLY`，甚至直接拔掉整個 policy engine**，沒有其他 condition key 可以另外保護。
+- **上線流程：** 先用 `LOG_ONLY` 模式觀察，再切換到 `ENFORCE`。⚠️ **有 `UpdateGateway` 權限的人，就能把模式切回 `LOG_ONLY`，甚至直接拔掉整個 policy engine**，沒有其他 condition key 可以另外保護。每條 policy 也有自己的 `enforcementMode`，所以 **`UpdatePolicy` 權限同樣能讓單條 policy 失效**（見[延伸](prompt-to-policy.md#更正與補充對-08-本文)）。
 
 ## 為什麼不能只靠 prompt？
 
@@ -106,14 +106,14 @@ when temporal {
 | 修改 policy 會讓進行中的 session 失效 | 新增或修改 temporal policy 後，進行中的 session 會收到 **409**，要開一個新的 session |
 | 呼叫鏈 | 必須在**同一個帳號、同一個區域**；Workload Access Token 要隨著請求一路傳遞（Gateway 和 Runtime 之間會自動處理）；gateway 的 role 需要 `GetWorkloadAccessToken` 權限 |
 | 配額 | 每個 engine 最多 20 個 temporal policy；每個 policy 最多 3 個 temporal 運算子；時間窗最長 24 小時 |
-| ⚠️ 安全限制 | **Session ID 是呼叫端提供的**，所以「每個 session 最多 N 次」這種限制，**只要換一個 session ID 就重新計算**，不能當作跨 session 的限流 |
+| ⚠️ 安全限制 | **Session ID 是呼叫端提供的**，所以「每個 session 最多 N 次」這種限制，**只要換一個 session ID 就重新計算**，不能當作跨 session 的限流。不過 session 的 key 包含呼叫者身分，**不同的呼叫者就算用同一個 ID，也不會共用歷史**（inbound 驗證為 `NONE` 時例外，見[延伸](temporal-workflows.md#session-的識別重新檢視弱點)） |
 | 區域 | 東京、新加坡、雪梨、首爾、孟買等都支援 |
 
 ### 2. Guardrails in policy
 
 把 Bedrock Guardrails 當成「**資訊提供者**」，在 policy 裡依它給的分數做決定：
 
-| 類型 | 類別 | 預設門檻 |
+| 類型 | 類別 | 預設門檻（只在用自然語言產生 policy 時套用） |
 |------|------|---------|
 | `ContentFilter` | 暴力、仇恨、色情、不當行為、侮辱 | 0.2 |
 | `PromptAttack` | JAILBREAK、**PROMPT_INJECTION**、PROMPT_LEAKAGE | 0.4 |
@@ -126,7 +126,7 @@ forbid (principal, action == …, resource) when guardrails {
     .confidenceScore.greaterThan(decimal("0.6"))
 };
 
-// 工具的輸出含有身分證號就遮蔽（新的 suppressOutput 效果）
+// 工具的輸出含有美國社會安全號碼，就把整個輸出拿掉（新的 suppressOutput 效果）
 suppressOutput (principal, action == …, resource) when guardrails {
   BedrockGuardrails::SensitiveInformation(["US_SOCIAL_SECURITY_NUMBER"], [context.output.text])["US_SOCIAL_SECURITY_NUMBER"]
     .confidenceScore.greaterThan(decimal("0.5"))
@@ -154,7 +154,7 @@ suppressOutput (principal, action == …, resource) when guardrails {
 1. **建立時驗證：** 用自動產生的 schema 檢查 action、欄位和型別；**自動推理**會標出「永遠允許」或「永遠拒絕」的 policy。
 2. **`LOG_ONLY` 模式：** 只評估並記錄決策，不真的擋下請求。先觀察一段時間的正式流量，確認不會誤擋。
 3. **切換到 `ENFORCE`。**
-4. **保護 engine 的設定：** 把 `bedrock-agentcore:UpdateGateway` 權限只給極少數人，並對 `policyEngineConfiguration` 的變更設 CloudTrail 警報。**這是整套機制最弱的一環。**
+4. **保護 engine 的設定：** 把 `bedrock-agentcore:UpdateGateway` 和 `UpdatePolicy` 權限只給極少數人，並對 `policyEngineConfiguration` 的變更設 CloudTrail 警報。**這是整套機制最弱的一環。**
 
 ## 限制與配額
 
@@ -172,7 +172,7 @@ suppressOutput (principal, action == …, resource) when guardrails {
 
 1. **有 `UpdateGateway` 權限就能關掉或降級整個 Policy**，而且沒有額外的保護機制。
 2. **`tools/list` 看得到不代表能呼叫**，實際呼叫時會依參數再判斷一次。
-3. **Temporal 的 session ID 由呼叫端提供**，換一個 ID 就能重新計數，不能拿來做跨 session 的限流。
+3. **Temporal 的 session ID 由呼叫端提供**，換一個 ID 就能重新計數，不能拿來做跨 session 的限流（要搭配 Gateway 的 rate limit 或後端額度）。
 4. **修改 temporal policy 會讓進行中的 session 收到 409。**
 5. **engine 裡有 temporal policy 時，沒帶 session header 的請求會直接失敗。**
 6. **Guardrail 的分數是機率性的**，門檻要先用 `LOG_ONLY` 校準；而且亞太只有東京和雪梨支援。
@@ -195,6 +195,17 @@ suppressOutput (principal, action == …, resource) when guardrails {
 - [x] 如何用 JWT claim（例如 `cognito:groups`）做授權（claim 會變成 principal 的 tag）
 - [x] Policy 的測試與版本管理（schema 驗證、自動推理、`LOG_ONLY`、NL2Cedar 的審查）
 - [x] （補充）Temporal policy 與 Guardrails in policy
+
+## 延伸調研
+
+- [把業務規則從 prompt 搬到 Policy](prompt-to-policy.md)：規則盤點、為 policy 設計工具 schema、Cedar 改寫、本機驗證
+- [用 temporal policy 控管業務流程](temporal-workflows.md)：順序、核准、總額上限的寫法與陷阱；session 弱點的補強；409 的處理
+- [Guardrails in policy 的門檻校準與縱深防禦](guardrails-calibration.md)：用成本選門檻、`suppressOutput` 的實際行為、各層分工
+
+## 實驗
+
+- [Prompt 規則改寫成 Cedar](experiments/prompt-to-policy/)：用開源 Cedar 在本機驗證 schema 與 10 個授權案例，**已實跑、全部通過**
+- [Guardrail 門檻校準工具](experiments/guardrail-threshold/)：輸入分數與標註，算出各門檻的混淆矩陣與成本；**目前只用合成資料驗證過**
 
 ## 參考資料
 
