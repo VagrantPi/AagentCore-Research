@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Internal Order Service", "version": "1.0"},
+  "servers": [{"url": "https://orders.internal.example.com/v1"}],
+  "components": {"securitySchemes": {"bearer": {"type": "http", "scheme": "bearer"}}},
+  "paths": {
+    "/orders/{orderId}": {
+      "get": {
+        "operationId": "getOrder",
+        "summary": "用訂單編號查詢訂單狀態、金額與出貨資訊。只能查詢呼叫者本人的訂單。",
+        "parameters": [{"name": "orderId", "in": "path", "required": true, "description": "訂單編號，格式 ORD-12345", "schema": {"type": "string"}}]
+      },
+      "delete": {
+        "parameters": [{"name": "orderId", "in": "path", "required": true, "schema": {"type": "string"}}]
+      }
+    },
+    "/orders/{orderId}/refunds": {
+      "post": {
+        "operationId": "createRefundForOrderWithReasonAndOptionalPartialAmountInCents",
+        "parameters": [{"name": "orderId", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {"content": {
+          "application/json": {"schema": {"oneOf": [
+            {"type": "object", "properties": {"full": {"type": "boolean"}}},
+            {"type": "object", "properties": {"amountCents": {"type": "integer"}}}]}},
+          "application/x-www-form-urlencoded": {"schema": {"type": "object"}}}}
+      }
+    }
+  }
+}
