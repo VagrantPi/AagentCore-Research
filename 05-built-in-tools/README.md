@@ -13,7 +13,7 @@
 - **Code Interpreter 和 Browser 都是「每個 session 一台 microVM」的沙箱：** session 預設 15 分鐘、最長 8 小時。可以用 AWS 預先建好的版本（`aws.codeinterpreter.v1` / `aws.browser.v1`），也可以自己建立，自訂網路、execution role、錄影等設定。
 - **Code Interpreter 已預裝大量函式庫：** Python 3 和 Node.js/TypeScript 都支援，pandas、torch、duckdb、各種 PDF / Office 處理套件都有。檔案上限：直接上傳 100 MB，透過 S3 最大 5 GB。
 - **Browser 有兩種控制方式：**
-  - **CDP**（Playwright、browser-use、Nova Act 都走這條路）。
+  - **CDP**（Playwright、browser-use、Nova Act 都走這條路；Nova Act 的接法見 [Nova Act 04](../nova-act/04-agentcore/)）。
   - **作業系統層級的操作**（`InvokeBrowser`：滑鼠、鍵盤、全螢幕截圖），用來處理 CDP 碰不到的原生對話框。
   - 另外還有給人看的 **Live View**、完整錄影、保存登入狀態的 profile、proxy、減少 CAPTCHA 的 **Web Bot Auth**。
 - **Web Search 是掛在 Gateway 上的 connector：** 背後是 Amazon 自己維運的網頁索引，**查詢不會離開 AWS**。每千次查詢 $7，只有 us-east-1、愛爾蘭、東京三個區域。⚠️ 使用條款**要求你在輸出中保留並顯示來源連結**。

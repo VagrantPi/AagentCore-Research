@@ -38,7 +38,7 @@
 | **Memory（02）** | `MemoryClient` 或 AWS SDK 的 `CreateEvent` / `RetrieveMemoryRecords`；或透過 Gateway 的 Memory connector 走 MCP | Strands：session manager（`batch_size > 1` 時**一定要 `close()` 或用 `with`**，否則還沒送出的訊息會遺失）；LangGraph：`AgentCoreMemorySaver` 對應短期記憶和 checkpoint，`AgentCoreMemoryStore` 對應長期記憶（`thread_id` 對應 session、`actor_id` 對應 actor） |
 | **Gateway（03）** | 任何 MCP client（streamable HTTP） | 各框架的 MCP adapter，例如 Strands 的 `MCPClient`、`langchain-mcp-adapters` |
 | **Identity（04）** | `@requires_access_token`、`@requires_api_key` 裝飾器（Python），或 AWS SDK | — |
-| **內建工具（05）** | SDK 的 `code_session`、browser client；Browser 可以接 Playwright、browser-use、Nova Act | Strands 有內建的工具包裝 |
+| **內建工具（05）** | SDK 的 `code_session`、browser client；Browser 可以接 Playwright、browser-use、[Nova Act](../nova-act/04-agentcore/) | Strands 有內建的工具包裝 |
 | **Observability（06）** | ADOT 加上 `opentelemetry-instrument` | 依框架選擇 instrumentation 套件（見上表） |
 | **Evaluations / Optimization（07）** | 只要 span 符合支援的 scope name 就能評估；讀取 configuration bundle 用 `BedrockAgentCoreContext.get_config_bundle()` | 官方有 Strands（hook）、LangGraph、ADK、OpenAI SDK 讀取 bundle 的範例 |
 | **Policy（08）** | 在 Gateway 上生效，**跟框架無關** | — |
