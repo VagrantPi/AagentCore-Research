@@ -25,7 +25,7 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 | 04 | [Identity](04-identity/) | Agent 的身分與憑證管理 | ✅ 完成 |
 | 05 | [Built-in Tools](05-built-in-tools/) | Code Interpreter、Browser、Web Search | ✅ 完成 |
 | 06 | [Observability](06-observability/) | OTel 追蹤與監控 | ✅ 完成 |
-| 07 | [Evaluations](07-evaluations/) | On-demand / online 的 agent 評估 | 未開始 |
+| 07 | [Evaluations](07-evaluations/) | agent 品質評估與 Optimization（建議 + A/B test） | ✅ 完成 |
 | 08 | [Policy](08-policy/) | 用 Cedar 做細粒度存取控制 | 未開始 |
 | 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | 未開始 |
 | 90 | [框架整合](90-integrations/) | Strands、LangGraph、Claude Agent SDK 等 | 未開始 |
