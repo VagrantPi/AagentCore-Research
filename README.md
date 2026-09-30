@@ -21,7 +21,7 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 | 00 | [總覽](00-overview/) | 整體架構、計費、跟 Bedrock Agents 的差別 | ✅ 完成 |
 | 01 | [Runtime](01-runtime/) | Serverless 的 agent / tool 執行環境 | ✅ 完成 |
 | 02 | [Memory](02-memory/) | 代管的短期 / 長期記憶 | ✅ 完成 |
-| 03 | [Gateway](03-gateway/) | 把 API / Lambda 轉成 MCP 工具 | 未開始 |
+| 03 | [Gateway](03-gateway/) | agent 流量的統一入口：MCP 工具、HTTP 代理、LLM 代理（含 Registry） | ✅ 完成 |
 | 04 | [Identity](04-identity/) | Agent 的身分與憑證管理 | 未開始 |
 | 05 | [Built-in Tools](05-built-in-tools/) | Code Interpreter、Browser、Web Search | 未開始 |
 | 06 | [Observability](06-observability/) | OTel 追蹤與監控 | 未開始 |
