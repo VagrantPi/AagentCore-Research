@@ -46,7 +46,7 @@ Agent ──► Gateway ─────────┤     遠端 MCP server、�
 | 類別 | 特色 | 不支援的功能 |
 |------|------|-------------|
 | MCP | 聚合成單一的 `tools/list`、支援能力同步、語意搜尋、在 target 層級做 3LO | — |
-| HTTP | 轉送給 Runtime 或其他 agent；**可以把 Gateway 放在 Runtime 前面當唯一入口**（見 [01 安全要點](../01-runtime/README.md#安全要點)） | 能力同步、語意搜尋 |
+| HTTP | 轉送給 Runtime 或其他 agent；**可以把 Gateway 放在 Runtime 前面當唯一入口**（見 [01 安全要點](../01-runtime/README.md#安全要點)、[延伸](runtime-front-door.md)）。⚠️ Runtime target **只能加到沒有設定 `protocolType` 的 gateway** | 能力同步、語意搜尋 |
 | Inference | 可以直接用 OpenAI SDK 或 Anthropic SDK 呼叫 Gateway，換模型只需要改 model 字串；集中套用 Guardrails 和 Policy；提供彙整所有供應商的模型清單 | — |
 
 - **工具命名規則是 `${target名稱}___${工具名稱}`**，中間是三個底線。你的 Lambda handler 要自己把前綴去掉。
@@ -76,8 +76,8 @@ Agent ──► Gateway ─────────┤     遠端 MCP server、�
 | Lambda | | ✓ | | | | | | |
 | MCP server | ✓ | ✓ | | ✓ | ✓ | ✓ | | ✓ |
 | OpenAPI | ✓ | ✓ | | ✓ | ✓ | ✓ | | ✓ |
-| Smithy | | ✓ | | ✓ | | | | |
-| AgentCore Runtime（HTTP） | | ✓ | ✓ | ✓ | | | ✓ | |
+| Smithy（**只支援 AWS 服務的 model**） | | ✓ | | ✓ | | | | |
+| AgentCore Runtime（HTTP） | | ✓ | ✓ | ✓ | | ⚠️ 文件說不支援，但官方範例有用 | ✓ | |
 
 - **On-behalf-of（OBO，代表使用者換發 token）是官方建議的正式環境做法：** Gateway 拿使用者的 token 換一張**範圍更小、audience 只限於目標服務**的新 token。新 token 同時帶有「使用者是誰」和「agent 是誰」的資訊，下游每一層都能各自做授權。Token 直通（passthrough）只建議在試驗或初期導入時使用。
 - **3LO 的流程：** 使用者第一次用到某個需要授權的工具時，Gateway 會回傳一個授權 URL，使用者在瀏覽器裡同意後才能繼續。有 **session binding** 機制：同意完成後，應用程式要呼叫 `CompleteResourceTokenAuth`，由 Identity 驗證「發起授權的人」和「按下同意的人」是同一個人，避免授權 URL 被轉傳給別人使用。URL 的有效期限是 10 分鐘。細節留到 [04-identity](../04-identity/)。
@@ -89,7 +89,7 @@ Agent ──► Gateway ─────────┤     遠端 MCP server、�
 |------|---------|---------------|
 | **Interceptor**（Lambda） | REQUEST：在呼叫後端之前驗證、授權、改寫請求，或直接回應（短路）；RESPONSE：在回傳給呼叫者之前遮罩或加工內容 | Lambda 同步呼叫有 **6 MB** 的 payload 上限，LLM 的大回應可能會超過，這時要用 payload filter 排除 body；HTTP target 的 interceptor **不支援串流模式**；MCP 串流回應時，interceptor **每個事件都會被呼叫一次** |
 | **Rate limit** | 依 JWT claim、IAM 身分、target、工具等維度（最多 10 個）分組限流；inference target 可以限制每分鐘的 token 數；把速率設為 0 就等於封鎖 | **預設 fail-open**：限流服務不可用，或無法解析維度時，請求會直接放行，**不能當作安全邊界**；變更最多 30 秒才會生效；每個 gateway 最多 50 條規則 |
-| **Gateway rules** | 依呼叫者或路徑，把流量導到指定的 target，或切換 configuration bundle 版本；支援依權重分流（A/B） | 每個 gateway 最多 20 條規則；依權重分流只能分成 2 組；路徑條件只支援 HTTP target |
+| **Gateway rules** | 依呼叫者或路徑，把流量導到指定的 target，或切換 configuration bundle 版本；支援依權重分流（A/B） | 每個 gateway 最多 20 條規則；依權重分流只能分成 2 組；路徑條件只支援 HTTP target；`routeToTarget` 的依權重分流**只記載支援 HTTP target**，inference target 的模型分流要用 interceptor 改寫 `model`（見[延伸](llm-proxy.md#在模型之間分流或備援)） |
 | **Policy**（Cedar） | 在工具被呼叫之前做確定性的允許或拒絕判斷 | 見 [08-policy](../08-policy/) |
 | 其他 | WAF、自訂網域、KMS CMK 加密、header 傳遞、CloudTrail 的資料事件 | — |
 
@@ -170,6 +170,16 @@ Agent ──► Gateway ─────────┤     遠端 MCP server、�
 - [x] Inbound / outbound 驗證設定
 - [x] 工具的語意搜尋
 - [x] 與 Policy（Cedar）的串接點（細節留到 08）
+
+## 延伸調研
+
+- [把既有的內部 API 接成 agent 工具](api-to-tools.md)：target 怎麼選（Smithy 只支援 AWS 服務）、名稱與說明的寫法、從 API 設計轉成工具設計、語意搜尋與分組
+- [Gateway 當成 Runtime 唯一入口](runtime-front-door.md)：inbound 與 outbound 的搭配、用 resource policy 和 `allowedWorkloadConfiguration` 防止繞過、各種控制放哪一層
+- [Inference target 當成企業的 LLM 代理](llm-proxy.md)：憑證集中、依團隊限制 token、模型分流的實際做法、跟 LiteLLM 比較
+
+## 實驗
+
+- [OpenAPI 事前檢查](experiments/openapi-lint/)：接入前檢查規格是否符合 Gateway 的限制，已實跑
 
 ## 參考資料
 
