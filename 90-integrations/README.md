@@ -76,6 +76,7 @@
 | Coding agent、大量檔案與 shell 操作 | Claude Agent SDK，或 Harness（內建 shell 和檔案工具）；評估時要注意 span 結構的差異 |
 | 團隊已經熟悉某個框架 | 沿用原本的框架，透過 MCP 或 SDK 接上 AgentCore，**不必為了 AgentCore 換框架** |
 | TypeScript 為主的團隊 | Strands TS 或 Vercel AI SDK，搭配 Node 22 CodeZip 部署 |
+| 以網頁操作為主（填表、擷取、UI 測試），目標網站沒有 API | Nova Act workflow 跑在 Runtime + Browser；需要跨系統推理時，由 Strands 等框架把 Nova Act 當成工具（見 [Nova Act 03](../nova-act/03-hitl-tools/README.md#反過來nova-act-當-strands-的工具)、[04](../nova-act/04-agentcore/)） |
 
 ## 踩雷清單
 

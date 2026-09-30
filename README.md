@@ -11,8 +11,12 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
                   ├─ Memory（短期 / 長期記憶）
                   ├─ Payments（x402 自動付費）
                   ├─ Built-in Tools（Code Interpreter / Browser / Web Search）
+                  │                                 ▲ CDP
+                  │        Nova Act（瀏覽器 agent：看畫面 → 決定下一步；推論在 us-east-1 的 Nova Act 服務）
                   └─ Observability（OTel → CloudWatch） → Evaluations
 ```
+
+Nova Act 不取代 AgentCore，而是疊在上面：workflow 程式跑在 Runtime，瀏覽器用 Browser，Identity / Observability / Gateway 照常接上（見 [nova-act/04](nova-act/04-agentcore/)）。
 
 ## 元件索引
 
@@ -36,7 +40,16 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 
 ## Nova Act
 
-AWS 的瀏覽器 UI 自動化 agent 服務，可以跑在 AgentCore Runtime / Browser 上。篇章索引與進度見 [nova-act/README.md](nova-act/)。
+AWS 的瀏覽器 UI 自動化 agent 服務：用自然語言 + Python 寫 workflow，由專門訓練的模型操作網頁，可以跑在 AgentCore Runtime / Browser 上。進度見 [nova-act/README.md](nova-act/)。
+
+| # | 篇章 | 一句話定位 |
+|---|------|-----------|
+| 00 | [總覽](nova-act/00-overview/) | 定位、名詞、模型版本、計費（$4.75 / agent hour）、跟其他瀏覽器自動化方案的比較 |
+| 01 | [SDK](nova-act/01-sdk/) | `act()` / `act_get()`、prompt 寫法、錯誤處理、平行執行、保存登入狀態 |
+| 02 | [部署與維運](nova-act/02-deploy-operate/) | CLI / CDK 部署、Console、CloudWatch、CloudTrail |
+| 03 | [HITL 與工具](nova-act/03-hitl-tools/) | 真人核准與接手、MCP 工具、當 Strands 的工具 |
+| 04 | [跟 AgentCore 整合](nova-act/04-agentcore/) | Runtime、Browser、Identity、Observability、Gateway 的接法與成本 |
+| 05 | [安全](nova-act/05-security/) | prompt injection、IAM 最小權限、資料保護、文件矛盾 |
 
 ## 目錄慣例
 
@@ -44,10 +57,20 @@ AWS 的瀏覽器 UI 自動化 agent 服務，可以跑在 AgentCore Runtime / Br
 - 內容多了再拆出子筆記（例如 `01-runtime/session-lifecycle.md`）
 - 實作 / PoC 放在各元件底下的 `experiments/`
 - 跨元件的參考資料放 `refs/`
+- `nova-act/` 內部沿用同一套慣例（`00-overview/README.md` 這類編號資料夾）；它的延伸題範圍是「Nova Act 已研究的篇章」，可以引用 AgentCore 各篇
 
 ## 參考資料
+
+AgentCore：
 
 - [官方開發者指南](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html)
 - [awslabs/agentcore-samples](https://github.com/awslabs/agentcore-samples)
 - [aws/bedrock-agentcore-sdk-python](https://github.com/aws/bedrock-agentcore-sdk-python)
 - [aws/bedrock-agentcore-starter-toolkit](https://github.com/aws/bedrock-agentcore-starter-toolkit)
+
+Nova Act：
+
+- [Nova Act 使用者指南](https://docs.aws.amazon.com/nova-act/latest/userguide/what-is-nova-act.html)
+- [aws/nova-act](https://github.com/aws/nova-act)（SDK、CLI）
+- [amazon-agi-labs/nova-act-samples](https://github.com/amazon-agi-labs/nova-act-samples)
+- [AWS AI Service Card: Amazon Nova Act](https://docs.aws.amazon.com/ai/responsible-ai/nova-act/overview.html)

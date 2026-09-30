@@ -163,6 +163,7 @@ Agent ──► Gateway ─────────┤     遠端 MCP server、�
 - **Memory：** 可以透過 Memory connector 讓 Memory 經由 Gateway 對外，再搭配 Cedar 做 per-user 的 FGAC（見 [02](../02-memory/README.md#權限控制的三道防線)）。
 - **Identity：** outbound 用的 OAuth / API key 憑證都存放在 Identity 的 token vault。
 - **Policy / Optimization：** Policy 的評估點在 Gateway 上；Optimization 的 A/B 測試靠 gateway rules 分流。
+- **Nova Act：** Nova Act workflow 可以當 client 呼叫 Gateway 上的 MCP 工具，也可以把部署好的 workflow 掛到 Gateway，讓其他 agent 當成工具呼叫（見 [Nova Act 04](../nova-act/04-agentcore/README.md#gateway兩個方向)）。
 
 ## 研究問題
 

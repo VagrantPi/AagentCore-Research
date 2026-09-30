@@ -244,6 +244,7 @@ app.complete_async_task(task_id)         # 所有任務完成後，/ping 會回�
 - **Gateway**：建議放在 Runtime 前面當唯一入口；Runtime 也可以掛在 Gateway 底下，當成它的一個 target。
 - **Memory**：Runtime 的 session 狀態是暫時的，需要長期保存的東西應該寫進 Memory。
 - **Observability**：Runtime 會自動輸出 trace、log 和 metric 到 CloudWatch。
+- **Nova Act**：Nova Act CLI / IDE 的一鍵部署，底層就是把 workflow 包成 Runtime 容器；也可以自己寫 `@app.entrypoint` handler（見 [Nova Act 02](../nova-act/02-deploy-operate/)、[04](../nova-act/04-agentcore/README.md#runtime跑-workflow)）。
 
 ## 研究問題
 

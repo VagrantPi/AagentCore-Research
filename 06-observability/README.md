@@ -143,6 +143,7 @@ Session（session.id，透過 header 或 OTel baggage 傳遞）
 - **Runtime / Harness：** 產生最主要的 metric 和 span；Harness 預設全開。
 - **Memory / Gateway / Identity / 內建工具：** 各自有服務提供的 metric、log 和 span，要分別開啟 tracing 和 log delivery。
 - **Evaluations（07）：** 用這裡收集到的 trace 和 span 做評分，所以**沒有 observability 就沒辦法做線上評估**。
+- **Nova Act：** 用 ADOT 加上 OTel baggage 帶入 Nova Act 的 session ID，把 trace 和 Nova Act Console 的逐步紀錄串起來（見 [Nova Act 04](../nova-act/04-agentcore/README.md#observability接上-cloudwatch-trace)）；Nova Act 自己另有 `AWS/NovaAct` 指標（見 [Nova Act 02](../nova-act/02-deploy-operate/README.md#觀察consolecloudwatchcloudtrail)）。
 
 ## 研究問題
 

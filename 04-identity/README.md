@@ -177,6 +177,7 @@ sequenceDiagram
 - **Memory：** FGAC 用的使用者身分，就是 inbound JWT 的 `sub`（見 [02](../02-memory/README.md#權限控制的三道防線)）。
 - **Harness：** OpenAI、Gemini 等模型的 API key，以及私有 Git skill 的 PAT，都存放在 token vault。
 - **Payments：** Identity 也管理 payment credential provider（留到 09）。
+- **Nova Act：** Nova Act 的官方範例用 `@requires_access_token` 取得 token 後，**直接寫進 act 的 prompt**，這是反例：token 應該只在程式碼層使用（見 [Nova Act 04](../nova-act/04-agentcore/README.md#identity取得第三方-token)）。
 
 ## 研究問題
 

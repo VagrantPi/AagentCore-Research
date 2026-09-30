@@ -144,6 +144,7 @@ Code Interpreter（資源：aws.codeinterpreter.v1，或自建並設定網路與
 - **Runtime / Harness：** 在 Harness 裡各是一個工具設定；在 Runtime 裡則由 agent 程式透過 SDK 呼叫。VPC 的設定方式和 Runtime 相同（見 [01 網路](../01-runtime/README.md#網路)）。
 - **Gateway：** Web Search 是 Gateway 的 connector target，可以套用 Gateway 的限流和 Policy。
 - **Identity：** Browser 登入的替代方案，是改用 OAuth（3LO）呼叫第三方的 API。能用 API 就不要用 Browser 模擬登入（判斷）。
+- **Nova Act：** 專為 UI 操作訓練的瀏覽器 agent，透過 CDP 接 Browser。三種接法與跨 OS 鍵盤問題見 [Nova Act 04](../nova-act/04-agentcore/README.md#browser三種接法)；用 Browser profile 保存登入狀態見 [Nova Act 01](../nova-act/01-sdk/README.md#保存登入狀態)；用 Live View / DCV 讓真人接手（HITL）見 [Nova Act 03](../nova-act/03-hitl-tools/README.md#ui-takeover-需要遠端瀏覽器)；URL 白名單等瀏覽器 agent 的安全設計見 [Nova Act 05](../nova-act/05-security/)。
 
 ## 研究問題
 
