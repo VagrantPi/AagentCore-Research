@@ -1,6 +1,6 @@
-# AgentCore 研究
+# AgentCore + Nova Act 研究
 
-研究 Amazon Bedrock AgentCore 的筆記與實驗。每個元件一個資料夾，可以各自展開研究。
+研究 Amazon Bedrock AgentCore 與 Amazon Nova Act 的筆記與實驗。AgentCore 每個元件一個資料夾，可以各自展開研究；Nova Act 放在 [`nova-act/`](nova-act/) 區塊。
 
 ## 架構速覽
 
@@ -33,6 +33,10 @@ User Request → Runtime → Gateway → Policy (Cedar) → Backend / Tools
 官方元件清單中的 Harness、Optimization、Registry 沒有獨立的資料夾，分別併入 [00 延伸](00-overview/harness-vs-runtime.md)、[07](07-evaluations/)、[03](03-gateway/)。
 
 每篇文件的最後都有「延伸調研方向」，列出三個可以繼續深入的題目。
+
+## Nova Act
+
+AWS 的瀏覽器 UI 自動化 agent 服務，可以跑在 AgentCore Runtime / Browser 上。篇章索引與進度見 [nova-act/README.md](nova-act/)。
 
 ## 目錄慣例
 

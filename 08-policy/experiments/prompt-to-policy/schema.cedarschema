@@ -1,0 +1,33 @@
+// 仿照 AgentCore 自動產生的 schema 結構（Action 命名、OAuthUser 的 tags、context.input）。
+// 真實的 schema 由 Gateway 依工具的 inputSchema 產生，這裡是手寫的近似版本，只用來在本機驗證 policy。
+namespace AgentCore {
+  entity OAuthUser = { id: String } tags String;
+  entity Gateway;
+
+  type OrderTarget___get_orderInput = {
+    orderId: String,
+  };
+
+  type OrderTarget___process_refundInput = {
+    orderId: String,
+    customerId: String,
+    amountCents: Long,   // 金額用整數的「分」：JSON number 會變成 Decimal，temporal 的 sum 只能加 Long
+    country: String,
+    reason?: String,     // 非必填欄位：policy 引用前一定要先用 has 檢查
+  };
+
+  action "Mcp";
+  action "CallTool" in ["Mcp"];
+
+  action "OrderTarget___get_order" in ["CallTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: { input: OrderTarget___get_orderInput },
+  };
+
+  action "OrderTarget___process_refund" in ["CallTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: { input: OrderTarget___process_refundInput },
+  };
+}
