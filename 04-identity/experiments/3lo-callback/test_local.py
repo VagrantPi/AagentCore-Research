@@ -38,18 +38,19 @@ def main():
     store.pending[U3] = ("alice", store.pending[U3][1] - PENDING_TTL - 1)  # 模擬過期
 
     cases = [
-        ("沒登入就打 callback", call(app, U1), "400", 0),
-        ("mallory 拿到 alice 的授權連結", call(app, U2, "cookie-mallory"), "403", 0),
-        ("alice 正常完成", call(app, U1, "cookie-alice"), "200", 1),
-        ("同一個 session_id 重放", call(app, U1, "cookie-alice"), "400", 1),
-        ("連結被轉傳後，alice 自己再用也失效（已被消耗）", call(app, U2, "cookie-alice"), "400", 1),
-        ("超過 10 分鐘", call(app, U3, "cookie-alice"), "400", 1),
+        ("沒登入就打 callback", lambda: call(app, U1), "400", 0),
+        ("mallory 拿到 alice 的授權連結", lambda: call(app, U2, "cookie-mallory"), "403", 0),
+        ("alice 正常完成", lambda: call(app, U1, "cookie-alice"), "200", 1),
+        ("同一個 session_id 重放", lambda: call(app, U1, "cookie-alice"), "400", 1),
+        ("被轉傳過的連結，alice 自己再用也失效", lambda: call(app, U2, "cookie-alice"), "400", 1),
+        ("超過 10 分鐘", lambda: call(app, U3, "cookie-alice"), "400", 1),
     ]
     ok = True
-    for name, (status, body), want, want_calls in cases:
+    for name, run, want, want_calls in cases:
+        status, body = run()
         good = status == want and len(idc.calls) == want_calls
         ok &= good
-        print(f"{'✓' if good else '✗'} {name:<36} status={status} complete 呼叫次數={len(idc.calls)} {body}")
+        print(f"{'✓' if good else '✗'} {name:<28} status={status} complete 累計呼叫={len(idc.calls)} {body}")
     print("推給前端的訊息數：", len(pushed))
     print("CompleteResourceTokenAuth 參數：", idc.calls)
     print("\nALL PASS" if ok else "\nSOME FAILED")

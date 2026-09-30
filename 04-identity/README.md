@@ -112,7 +112,7 @@ sequenceDiagram
 - 有 JWT 就**明確 Deny** `GetWorkloadAccessTokenForUserId` 和 `InvokeAgentRuntimeForUser`。
 - 如果一定要用 userId，這個值必須從**已驗證的 principal 推導出來**，絕對不能接受前端傳來的值。
 - 有多個 IdP 時，userId 要加上前綴，例如 `cognito+user123`，避免不同 IdP 的使用者撞名。
-- 在 CloudTrail 裡記錄「哪個 principal 用了哪個 userId」。
+- 在 CloudTrail 裡記錄「哪個 principal 用了哪個 userId」。⚠️ 但取 token 的事件會把 workload access token 遮蔽，**CloudTrail 看不到替哪個使用者取 token**，要搭配 span 或自己的 log（見[延伸](multi-tenant-governance.md#稽核誰替誰拿了哪張-token)）。
 
 **為什麼重要：** vault 裡的 token 是以「agent + 使用者」為 key 存放的。**如果 userId 被偽造，就能拿到別人的 Google 或 Slack token。**
 
@@ -126,6 +126,7 @@ sequenceDiagram
 - 授權 URL 和 session URI 只有 **10 分鐘**有效。
 - 官方也建議帶一個**不透明的 `state` 參數**防範 CSRF。
 - 用 `agentcore dev` 在本機開發時，CLI 會代替你處理 callback，**部署到正式環境後就要自己實作**。這是很容易漏掉的一步。
+- **有兩個 callback 不要搞混：** 第三方後台註冊的是 AgentCore 的 callback（每個 credential provider 一個）；你自己的 callback 註冊在 workload identity（見[延伸](3lo-reference.md)）。
 
 ### 3. 權限範圍（誰可以拿哪張憑證）
 
@@ -183,6 +184,16 @@ sequenceDiagram
 - [x] Inbound 驗證（IdP / JWT）
 - [x] Outbound 憑證代管（OAuth2、API key、token vault）
 - [x] 代表使用者行事（3LO、OBO）的流程
+
+## 延伸調研
+
+- [3LO 的前後端參考實作](3lo-reference.md)：兩個 callback 的差別、授權 URL 送到前端的三種方式、session binding 的 callback 實作、各家 refresh token 設定與撤銷處理
+- [OBO 的端到端設計](obo-design.md)：每一層的 audience 與 scope、Entra / Okta / Cognito 的支援差異、下游 API 要驗證什麼、跟直接轉傳 token 比較
+- [多租戶的 credential 與身分治理](multi-tenant-governance.md)：provider 與 IAM 的切分模型、禁用 `ForUserId` 要放在哪裡、CloudTrail 與 span 的稽核查詢
+
+## 實驗
+
+- [3LO callback 參考實作](experiments/3lo-callback/)：session binding 的三個檢查與 6 個測試案例，**本機實跑通過**（AgentCore API 以假的 client 代替）
 
 ## 參考資料
 
