@@ -196,6 +196,7 @@ sequenceDiagram
 
 - **沒有台灣區**。從台灣出發，**東京（`ap-northeast-1`）是元件最齊的亞太區**，唯一缺的是 Payments。
 - 美國的 `us-east-1` 與 `us-west-2` 功能最完整，配額也最高。
+- ⚠️ Web Search 的可用區域，官方文件前後不一致：區域表寫 us-east-1、愛爾蘭、東京，Harness 的 Tools 頁卻寫「只有 us-east-1」。
 
 ## 值得先知道的配額
 
@@ -239,6 +240,11 @@ sequenceDiagram
 - **Harness**：分量很重，而且是官方建議的起點。目前在本篇與 01-runtime 中一併討論。
 - **Optimization**：建立在 Evaluations 之上，可以放進 07 一起研究。
 - **Registry**：組織層級的治理工具。
+
+## 延伸調研
+
+- [Harness 與 Runtime 的選擇細節](harness-vs-runtime.md)：能力邊界、逃生口、踩雷清單、export 路徑
+- [自建 vs 用 AgentCore](build-vs-buy.md)：各元件自建難度、綁定程度分析、混合策略
 
 ## 研究問題
 
