@@ -13,7 +13,7 @@
   - **TOOL_CALL**：這次工具選得對不對、參數對不對。
   - **沒有開啟 observability 就不能評估。**
 - **評估器有四種：**
-  - **Built-in**：16 個，大多用 LLM 當評審；軌跡比對類是程式判斷，**不花 token**。
+  - **Built-in**：16 個（定價頁寫 13 個、文件有 17 個評審範本，說法不一），大多用 LLM 當評審；軌跡比對類是程式判斷，**不花 token**。
   - **Third-party**：DeepEval、AutoEval 的評估器，由 AWS 代管執行。
   - **Custom LLM-as-judge**：自己寫評分指示、選模型、定評分量表。
   - **Code-based**：用 Lambda 寫確定性的檢查規則。
@@ -78,7 +78,7 @@
 **注意：**
 
 - **使用 ground truth placeholder 的自訂評估器，不能放進 online 評估。**
-- **Code-based 評估器一旦被啟用中的 online 設定引用，就會被鎖住**，不能修改或刪除，要先停用設定，或複製一份新的。
+- **自訂評估器（包括 code-based 與 LLM 評審）一旦被啟用中的 online 設定引用，就會被鎖住**，不能修改或刪除，要先停用設定，或複製一份新的。
 
 ## 五種執行模式
 
@@ -87,7 +87,7 @@
 | **Online** | 正式流量，依比例抽樣（例如 10%）或依條件過濾 | **持續監控品質**，看趨勢、找出低分的 session | 不能用 ground truth；每個設定最多 25 個評估器；每個帳號最多 1,000 個設定 |
 | **On-demand**（`Evaluate` API） | 指定的 span、trace、session | 調查客訴、驗證修正、開發期測試、試用自訂評估器 | 要先等 CloudWatch 收進資料，大約 2–5 分鐘；每個請求只能用 1 個評估器 |
 | **Batch** | 指定 CloudWatch Logs 的位置和時間範圍，由服務端自動找出 session | **改動前後的比較、回歸測試、定期稽核** | **token 單價打 75 折**；同時只能跑 5 個；每個 job 最多 500 個 session、10 個評估器 |
-| **Dataset**（預覽） | 預先準備的情境：輸入、預期回應、斷言、預期軌跡 | **Runner 會實際呼叫 agent**，然後評分。相當於 agent 的整合測試 | 由 SDK 端驅動 |
+| **Dataset**（預覽） | 預先準備的情境：輸入、預期回應、斷言、預期軌跡 | **Runner 會實際呼叫 agent**，然後評分。相當於 agent 的整合測試 | 由 SDK 端驅動；題庫可以存在代管的 Dataset 服務（有不可修改的版本，見[延伸](test-pyramid-ci.md#dataset-的格式)） |
 | **Simulation** | 角色設定（背景、目標、個性特質）加上第一句話 | 用 LLM 扮演使用者**進行多輪對話**，直到達成目標或到達回合上限，然後評分 | 扮演使用者的模型要另外付 Bedrock 費用；**不能用每一輪的預期回應和預期軌跡**，只能用 `assertions` |
 
 **建議的導入順序（判斷）：**
@@ -143,7 +143,7 @@ Strands、LangGraph、OpenAI Agents、Vercel AI SDK、LlamaIndex、Google ADK、
 3. **On-demand 評估要等 CloudWatch 收進資料**（2–5 分鐘），CI 裡要加等待時間。
 4. **LLM 評審有雜訊和偏誤**，關鍵指標要搭配確定性的評估器，並定期人工校準。
 5. **內建評估器可能跨區域推論**，要注意資料駐留的要求。
-6. **Code-based 評估器被啟用中的 online 設定引用時，不能修改或刪除。**
+6. **自訂評估器被啟用中的 online 設定引用時，不能修改或刪除**（不只 code-based）。
 7. **Code-based 評估器的輸入超過 6 MB 會被截斷**，長 session 可能看不到完整資料。
 8. **每個 gateway 同時只能跑 1 個 A/B test**，而且只能分成兩組。
 9. **讀取 configuration bundle 一定要設定預設值**，並處理 API 呼叫失敗的情況。
@@ -163,6 +163,18 @@ Strands、LangGraph、OpenAI Agents、Vercel AI SDK、LlamaIndex、Google ADK、
 - [x] On-demand、online、batch 三種評估模式（外加 dataset、simulation）
 - [x] 與 Observability trace 的關聯
 - [x] （補充）Optimization：recommendations、configuration bundle、A/B test
+
+## 延伸調研
+
+- [Agent 的測試金字塔與 CI 整合](test-pyramid-ci.md)：各層測什麼、軌跡比對怎麼選、CI 的等待與門檻（官方範例的門檻過寬）
+- [LLM 評審的可靠度校準](judge-calibration.md)：三種評審比較、公開 prompt 裡的寬鬆傾向、用 kappa 校準、哪些指標改用確定性方法
+- [Optimization 閉環的實際導入](optimization-loop.md)：bundle 改寫方式、recommendation 的審查、A/B test 樣本數、用 gateway rules 上線與回滾
+
+## 實驗
+
+- [CI 門檻與 code-based 評估器](experiments/ci-gate/)：本機測試通過，**沒有在 AWS 上跑過**
+- [評審一致性分析](experiments/judge-agreement/)：**只用合成資料**示範
+- [A/B test 樣本數估算](experiments/ab-sample-size/)：已實跑，結果整理在延伸文件中
 
 ## 參考資料
 
