@@ -42,15 +42,15 @@ Code Interpreter（資源：aws.codeinterpreter.v1，或自建並設定網路與
 |------|------|
 | 語言 | Python、JavaScript、TypeScript；預裝的 Node 套件很少（axios、lodash、zod 等） |
 | 預裝的 Python 套件 | 資料分析（pandas、polars、numpy、duckdb、pyarrow）、畫圖（matplotlib、plotly）、ML（scikit-learn、torch、xgboost、spacy）、最佳化（ortools、cvxpy、z3）、文件處理（openpyxl、python-docx、pdfplumber、python-pptx、markitdown）、影音處理（opencv、moviepy、ffmpeg），以及 boto3、SQLAlchemy、psycopg2 等 |
-| 網路模式 | **Sandbox**（官方描述是「有限的對外連線」）、**Public**（可以上網）、**VPC**（連到你 VPC 裡的資源；要上網得走 NAT） |
-| Execution role | 程式在沙箱裡用這個 role 存取 AWS，例如用 `aws s3 cp` 讀取大檔案。**這個 role 的權限，等於模型寫出來的任何程式都能使用的權限** |
-| 硬體與配額 | 每個 session 2 vCPU / 8 GB、10 GB 磁碟；同步請求 15 分鐘、非同步最長 8 小時；每個帳號同時 1,000 個 session |
+| 網路模式 | **Sandbox**（官方描述是「有限的對外連線」，**明確可以存取 S3**）、**Public**（可以上網）、**VPC**（連到你 VPC 裡的資源；要上網得走 NAT；可以掛載 S3 Files / EFS，見[延伸](code-interpreter-data-agent.md#資料怎麼進出沙箱)） |
+| Execution role | 程式在沙箱裡用這個 role 存取 AWS，例如用 `aws s3 cp` 讀取大檔案。憑證經由 MMDS 提供，**沙箱裡的任何程式都讀得到**；所以這個 role 的權限，等於模型寫出來的任何程式都能使用的權限 |
+| 硬體與配額 | 每個 session 2 vCPU / 8 GB、10 GB 磁碟；同步請求 15 分鐘、非同步（`startCommandExecution` + `getTask`）最長 8 小時；每個帳號同時 1,000 個 session |
 | 計費 | 依實際用量計費（與 Runtime v1 同價），等待 I/O 的時間不收 CPU 費用 |
 
 **怎麼用：**
 
 - 在 Harness 裡，只要設定一個 `agentcore_code_interpreter` 工具。
-- 在 Runtime 裡，用 SDK 的 `code_session` context manager（可以確保用完會關閉），或直接呼叫 API。
+- 在 Runtime 裡，用 SDK 的 `code_session` context manager（可以確保用完會關閉），或直接呼叫 API。⚠️ 官方的 agent 範例在**每次工具呼叫**裡開 session，變數不會保留；正確做法是一個對話共用一個 session（見[延伸](code-interpreter-data-agent.md#一個對話一個-session)）。
 
 **跟 Runtime 的 `InvokeAgentRuntimeCommand` 有什麼不同？** Command 是在「**agent 自己的** microVM」裡執行，跟 agent 共用檔案系統和憑證。Code Interpreter 則是**另一台獨立的沙箱**，執行的是**模型產生的、不受信任的程式碼**，可以設定不同的網路限制和權限。
 
@@ -108,12 +108,12 @@ Code Interpreter（資源：aws.codeinterpreter.v1，或自建並設定網路與
 | 掛載方式 | 在 Gateway 上加一個 target，設定 `connectorId: "web-search"`；agent 就會在 `tools/list` 裡看到 `WebSearch` 這個工具。Harness 則是把這個 gateway 設定成一個工具 |
 | 索引 | **Amazon 自建的網頁索引**，涵蓋數百億份文件，更新延遲在幾分鐘內，並搭配 knowledge graph 回答事實類的問題 |
 | 回傳內容 | 經過語意擷取的**相關段落**（而不是整份 HTML），附上 URL、標題、發布日期。這樣 token 用得比較少，也比較容易引用出處 |
-| 參數 | `query` 最多 200 字元、`maxResults` 1–25 筆（預設 10）；connector 1.2.0 版之後，每次請求可以另外指定網域的包含或排除清單（各 100 個），以及發布日期範圍 |
+| 參數 | `query` 最多 200 字元、`maxResults` 1–25 筆（預設 10）；connector 1.2.0 版之後，每次請求可以另外指定網域的包含或排除清單（各 100 個），以及發布日期範圍。⚠️ **預設版本仍是 1.1.0**，要明確指定 `1.2.0` 才有過濾功能 |
 | 網域過濾 | 管理者可以在 target 層級設定包含或排除清單，**agent 看不到這份清單，也無法覆寫**；請求層級的過濾只能在這個範圍內「再縮小」 |
 | 隱私 | **查詢完全在 AWS 內部處理，不會送到第三方搜尋引擎** |
 | 計費與配額 | 每千次查詢 $7；10 TPS |
 | 區域 | us-east-1、愛爾蘭、**東京** |
-| 使用條款 | **輸出中必須保留並顯示來源連結**；不能大量擷取搜尋結果，也不能拿來建立競爭性的索引 |
+| 使用規定 | **輸出中必須保留並顯示來源連結**；不能大量擷取搜尋結果，也不能拿來建立競爭性的索引。出處是開發者文件的「Acceptable use」段落，**不是 AWS Service Terms**（Service Terms 沒有 Web Search 的章節） |
 
 **區域的文件矛盾（接續 [00](../00-overview/README.md#區域可用性) 的發現）：** Web Search connector 的頁面和區域表都寫三個區域，只有 Harness 的 Tools 頁寫「只有 us-east-1」。**以 connector 頁面為準的可能性比較高**，但東京區仍建議實際驗證一次。
 
@@ -152,6 +152,18 @@ Code Interpreter（資源：aws.codeinterpreter.v1，或自建並設定網路與
 - [x] Browser：session 管理、live view、與 Playwright 等工具整合
 - [x] Web Search Tool 的能力與限制
 - [x] 網路存取模式（Sandbox / Public / VPC）
+
+## 延伸調研
+
+- [Browser 自動化的可靠性與安全設計](browser-reliability-security.md)：控制方式怎麼選、profile 的儲存與並行問題、真人接手的流程、prompt injection 的控制手段（VPC + 防火牆才是硬邊界）
+- [用 Code Interpreter 設計資料分析 agent](code-interpreter-data-agent.md)：資料進出的三條路、execution role 的最小權限、網路模式的差別、一個對話一個 session、官方成本範例的低估
+- [Web Search 的 grounding 品質與成本控制](web-search-grounding.md)：要明確指定 1.2.0、網域與日期過濾的設計、查詢策略與費用估算、引用來源由程式保證
+
+## 實驗
+
+- [導覽白名單檢查](experiments/url-guard/)：12 個案例本機實跑通過
+- [Code Interpreter 網路模式實測腳本](experiments/sandbox-probe/)：本機確認可執行，**還沒在 Code Interpreter 裡跑過**
+- [Web Search 月費估算與引用檢查](experiments/web-search/)：本機實跑通過，**沒有實際呼叫過 Web Search**
 
 ## 參考資料
 
