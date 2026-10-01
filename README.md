@@ -33,6 +33,7 @@ Nova Act 不取代 AgentCore，而是疊在上面：workflow 程式跑在 Runtim
 | 08 | [Policy](08-policy/) | 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails） | ✅ 完成 |
 | 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | ✅ 完成 |
 | 90 | [框架整合](90-integrations/) | 框架 × 元件對照：Strands、LangGraph、Claude Agent SDK 等 | ✅ 完成 |
+| 91 | [技術選型調研工作包](91-work-packages/) | 把「每人一台對話 agent」的關鍵假設切成 8 個可發包的 AWS 實測工作包，每個檢核點標示來源等級、要求帳單數字 | 🔲 待領取 |
 
 官方元件清單中的 Harness、Optimization、Registry 沒有獨立的資料夾，分別併入 [00 延伸](00-overview/harness-vs-runtime.md)、[07](07-evaluations/)、[03](03-gateway/)。
 

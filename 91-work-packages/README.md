@@ -1,0 +1,91 @@
+# 技術選型調研工作包
+
+> 把「每位使用者一台對話 agent」的架構決策，切成可以各自領走、1–2 人日內用真實 AWS 帳號驗證完的工作包。目的只有一個：**在正式開工前，把推測變成「已證實 / 已否定」，並拿到實際帳單數字。**
+>
+> 建立日期：2026-10-01。背景與架構討論見[決策背景](#決策背景)。
+
+## 為什麼要做這件事
+
+研究庫 00–09 的內容建立在官方文件上，但盤點後確認：
+
+- **研究庫裡 14 個實驗，沒有任何一個在 AWS 上真正跑過**（都是本機、假 client 或合成資料）。
+- 目標架構倚賴的幾項能力，官方文件**沒寫或前後矛盾**：Code Interpreter Sandbox 能否連外、Policy 能否讀陣列型 claim、瀏覽器接手後 agent 端的行為、Live View URL 過期後連線是否中斷、session storage 怎麼計費、V2 快照是否造成狀態重複。
+- 定價只有單價，沒有「我們的使用情境」下的帳單。
+
+接下來一個月時程滿檔、容錯小，所以每個關鍵假設都要在開工前驗過。
+
+## 設計原則（每包都遵守）
+
+1. **一包只回答 3–10 個是非題**，每題都能用「跑一次、看一個數字或一個 API 回應」判定。不做開放式調研。
+2. **每個檢核點標示來源等級：**
+   - `[官方已寫]`：官方文件明載，只需跑一次確認版本沒變。
+   - `[推測]`：研究庫或討論中的判斷。**必須實跑，沒跑就視為未通過。**
+   - `[矛盾]`：官方文件前後不一致。實跑並記錄哪一頁是對的。
+3. **成本必須是帳單數字。** 每包用專屬 tag（`wp=<編號>`、`owner=<人>`）開資源，結束後從 Cost Explorer 依 tag 拉出實際金額，附截圖或 CSV。單價換算的數字另欄標「估算」。
+4. **失敗也是結果。** 功能不存在或行為不符，回填「否定」並寫替代方案，不要硬做。
+5. **每包結束要清資源。** Runtime、Browser、Memory 都有閒置計費或配額。
+6. **回填用同一份模板：**[`_template.md`](_template.md)。寫在各 WP 檔案最下方的「回填」區。
+
+## 工作包總覽與分工
+
+| 編號 | 題目 | 回答的選型問題 | 前置 | 人日 | 負責人 | 狀態 |
+|---|---|---|---|---|---|---|
+| [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的帳單怎麼拉 | — | 0.5 | | ⬜ |
+| [WP1](WP1-runtime-session.md) | Runtime 冷啟動與「一人一實體」 | microVM 撐不撐得住對話體驗？V2 值不值得？ | WP0 | 1.5 | | ⬜ |
+| [WP2](WP2-capability-boundary.md) | 能力邊界：Harness 覆寫 + Gateway Policy | 「只能用買到的技能」做不做得到、靠哪一層 | WP0 | 1.5 | | ⬜ |
+| [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死 | WP0 | 1 | | ⬜ |
+| [WP4](WP4-browser-takeover.md) | Browser 接手登入 | Muse 式的接手流程能不能在 AgentCore 做出來 | WP0 | 2 | | ⬜ |
+| [WP5](WP5-user-state-isolation.md) | 使用者狀態與隔離、每使用者成本 | 資料不外洩、每人成本算得出來 | WP0 | 1.5 | | ⬜ |
+| [WP6](WP6-oss-alternatives.md) | 不用 AgentCore 的開源方案 | 自架的真實成本與缺口 | — | 2 | | ⬜ |
+| [WP7](WP7-openclaw-on-agentcore.md) | OpenClaw on AgentCore 官方範例實跑（選配） | 方案 A 的真實數字，當對照組 | WP0 | 1 | | ⬜ |
+
+- WP0 先半天做完，其他人才有統一的成本量測方式。
+- WP1–WP7 彼此獨立，可以同時開工。
+- 每位同事都有 AI 輔助，各 WP 都標了既有的腳本和研究庫段落，可以直接餵給 AI 當起點。
+
+## 決策矩陣（全部回填後匯整）
+
+每格只填數字或「通過 / 否定」，附 WP 檔連結。
+
+| 面向 | 方案 B：AgentCore Runtime（自寫 agent） | 方案 A：OpenClaw 跑在 AgentCore | 方案 C：自架開源 |
+|---|---|---|---|
+| 首句延遲（冷 / 暖） | WP1 | WP7 | WP6 |
+| 能力邊界能否在 agent 外強制 | WP2 + WP3 | WP7 | WP6 |
+| 接手登入 | WP4 | — | WP6 |
+| 資料隔離 | WP5 | WP7 | WP6 |
+| 每位使用者每月實際成本 | WP0 + WP5 | WP7 | WP6 |
+| 要自己維運的元件 | 少 | 中 | WP6 |
+| 關鍵否定項（阻斷） | | | |
+
+## 決策背景
+
+討論中形成、待這些 WP 驗證的目標架構：
+
+```
+聊天 App（一位使用者有多個聊天室）
+  │  user token
+  ▼
+後端：驗證身分 → 查已購買的能力 → 查或分配 runtime session（對照表）→ 範圍外請求先擋
+  │
+  ▼
+AgentCore Runtime（microVM；每位使用者一個主實體，重任務另開任務實體）
+  ├─ 狀態：Memory（對話）／自家 DB（任務進度）／session storage（快取）
+  ├─ 工具：Gateway + Policy（依已購買的能力過濾）
+  ├─ Browser（每位使用者一個；profile 依網站分開；Live View 讓使用者接手登入）
+  └─ Code Interpreter（不能上網的沙箱）
+```
+
+倚賴的關鍵假設，和對應的 WP：
+
+| 假設 | 來源等級 | 驗證 |
+|---|---|---|
+| microVM 冷啟動可以用預喚醒藏起來，使用者感受不到 | `[推測]` | WP1 |
+| 同一個 session ID 可以讓一位使用者的多個聊天室共用一台 microVM，並行請求不會卡住 `/ping` | `[推測]` | WP1 |
+| Harness 呼叫時覆寫 `allowedTools` / `skills` 能限制模型看到的工具 | `[官方已寫]`，未實證 | WP2 |
+| Gateway Policy 能依 JWT 內的「已購買能力」陣列過濾 `tools/list` | `[推測]` | WP2 |
+| Code Interpreter 的 Sandbox 模式擋得住任意外網 | `[推測]` | WP3 |
+| Live View + `take_control` 能做出「使用者登入後交還給 agent」 | `[官方已寫]` 機制、`[推測]` 流程 | WP4 |
+| Memory `actorId` 加 IAM 能擋住跨使用者讀取；episodic reflection 不會跨使用者 | `[矛盾]` / `[推測]` | WP5 |
+| USAGE_LOGS 可以分攤每位使用者的成本 | `[官方已寫]`，未實證 | WP0、WP5 |
+
+相關研究庫篇章：[01 Runtime](../01-runtime/)、[03 Gateway](../03-gateway/)、[05 內建工具](../05-built-in-tools/)、[08 Policy](../08-policy/)、[02 Memory](../02-memory/)、[06 Observability](../06-observability/)、[00 Harness vs Runtime](../00-overview/harness-vs-runtime.md)、[00 自建 vs 採用](../00-overview/build-vs-buy.md)。
