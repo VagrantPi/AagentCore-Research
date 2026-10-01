@@ -261,7 +261,7 @@ app.complete_async_task(task_id)         # 所有任務完成後，/ping 會回�
 
 ## 實驗
 
-- [冷啟動與 session 建立速率](experiments/cold-start/README.md)：實驗工具已完成、本機驗證通過，**尚未在 AWS 上實跑**（撰寫時沒有 AWS 憑證）。矩陣為 V1/V2 × container/zip × PUBLIC/VPC，外加大 image，並用來驗證 V2 snapshot 的狀態重複問題，以及 1.6/s 與 25/s 的文件矛盾
+- [冷啟動與 session 建立速率](experiments/cold-start/README.md)：實驗工具已完成、本機驗證通過，**尚未在 AWS 上實跑**（撰寫時沒有 AWS 憑證）。矩陣為 V1/V2 × container/zip × PUBLIC/VPC，外加大 image，並用來驗證 V2 snapshot 的狀態重複問題，以及 1.6/s 與 25/s 的文件矛盾。**將由 [WP1](../91-work-packages/WP1-runtime-session.md) 在 AWS 實跑**，結果回填到實驗的 README
 
 ## 參考資料
 
@@ -285,3 +285,5 @@ app.complete_async_task(task_id)         # 所有任務完成後，/ping 會回�
 1. **Runtime 的版本與 endpoint 上線策略：** 怎麼用不可變版本加上具名 endpoint 做 canary 或藍綠部署；舊 session 最長會跑舊版 8 小時，這段新舊並存期間，API 相容性該怎麼設計；以及 V2 更新要等好幾分鐘，CI/CD 流程要怎麼因應。
 2. **Session 和使用者綁定的後端參考設計：** session ID 怎麼產生、存放、過期；每個使用者的 session 數量上限；如何用 CloudTrail 偵測有人存取了別人的 session；以及「每個租戶一個 IAM principal」的做法怎麼落地。
 3. **Runtime 的成本模型實算：** 以 coding agent、客服 agent 這兩種工作負載為例，比較 V1 / V2 / Instances 在不同閒置逾時設定下的月費，重點看「記憶體閒置時仍然計費」的影響。
+
+> 第 2、3 題和[技術選型工作包](../91-work-packages/)的 [WP1](../91-work-packages/WP1-runtime-session.md)（一位使用者固定一個 session、並行請求、帳單）與 [WP5](../91-work-packages/WP5-user-state-isolation.md)（每位使用者的月費）重疊。做這兩題之前，先看 WP 的回填結果。

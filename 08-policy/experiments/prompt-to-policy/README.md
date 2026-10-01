@@ -2,6 +2,8 @@
 
 說明見 [prompt-to-policy.md](../../prompt-to-policy.md#第四步在本機先驗證)。
 
+> 這裡只在本機驗證 Cedar 語法與授權邏輯。在 AgentCore Gateway 上的實測（陣列型 claim、`tools/list` 過濾）由 [WP2](../../../91-work-packages/WP2-capability-boundary.md) 進行。
+
 ```bash
 pip install cedarpy   # 撰寫時使用 4.12.1（Cedar 4.x）
 python run.py

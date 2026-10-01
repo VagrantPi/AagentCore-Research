@@ -1,6 +1,6 @@
 # 實驗：Runtime 冷啟動與 session 建立速率
 
-> 狀態：**實驗工具已完成，尚未在 AWS 上實跑。** 撰寫時的環境沒有 AWS 憑證，下方的結果表是空的，跑完後再補上。
+> 狀態：**實驗工具已完成，尚未在 AWS 上實跑。** 撰寫時的環境沒有 AWS 憑證，下方的結果表是空的，跑完後再補上。**將由 [WP1](../../../91-work-packages/WP1-runtime-session.md) 實跑，結果回填到本檔。**
 >
 > 本機已驗證的部分：agent 直接執行與 container 執行都正常（arm64、`/ping`、`/invocations`）；`bench.py` 的 deploy / measure / cleanup 流程，以及 MMDSv2 補開的分支，都用 botocore Stubber 對照真實的 service model 測試過。
 

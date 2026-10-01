@@ -206,6 +206,7 @@ suppressOutput (principal, action == …, resource) when guardrails {
 
 - [Prompt 規則改寫成 Cedar](experiments/prompt-to-policy/)：用開源 Cedar 在本機驗證 schema 與 10 個授權案例，**已實跑、全部通過**
 - [Guardrail 門檻校準工具](experiments/guardrail-threshold/)：輸入分數與標註，算出各門檻的混淆矩陣與成本；**目前只用合成資料驗證過**
+- 依已購買能力過濾工具（`experiments/skill-gating/`，尚未建立）：將由 [WP2](../91-work-packages/WP2-capability-boundary.md) 以上面的 Cedar 案例為起點，在 AWS 上實測陣列型 claim 與 `tools/list` 過濾
 
 ## 參考資料
 

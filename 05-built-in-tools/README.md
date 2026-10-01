@@ -162,7 +162,8 @@ Code Interpreter（資源：aws.codeinterpreter.v1，或自建並設定網路與
 ## 實驗
 
 - [導覽白名單檢查](experiments/url-guard/)：12 個案例本機實跑通過
-- [Code Interpreter 網路模式實測腳本](experiments/sandbox-probe/)：本機確認可執行，**還沒在 Code Interpreter 裡跑過**
+- [Code Interpreter 網路模式實測腳本](experiments/sandbox-probe/)：本機確認可執行，**還沒在 Code Interpreter 裡跑過**；將由 [WP3](../91-work-packages/WP3-sandbox-egress.md) 實跑
+- Browser 接手登入 demo（`experiments/takeover-demo/`，尚未建立）：將由 [WP4](../91-work-packages/WP4-browser-takeover.md) 建立，實測 Live View、`take_control`、profile 隔離
 - [Web Search 月費估算與引用檢查](experiments/web-search/)：本機實跑通過，**沒有實際呼叫過 Web Search**
 
 ## 參考資料

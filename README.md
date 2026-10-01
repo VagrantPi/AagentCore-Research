@@ -20,24 +20,24 @@ Nova Act 不取代 AgentCore，而是疊在上面：workflow 程式跑在 Runtim
 
 ## 元件索引
 
-| # | 元件 | 一句話定位 | 狀態 |
-|---|------|-----------|------|
-| 00 | [總覽](00-overview/) | 整體架構、計費、跟 Bedrock Agents 的差別 | ✅ 完成 |
-| 01 | [Runtime](01-runtime/) | Serverless 的 agent / tool 執行環境 | ✅ 完成 |
-| 02 | [Memory](02-memory/) | 代管的短期 / 長期記憶 | ✅ 完成 |
-| 03 | [Gateway](03-gateway/) | agent 流量的統一入口：MCP 工具、HTTP 代理、LLM 代理（含 Registry） | ✅ 完成 |
-| 04 | [Identity](04-identity/) | Agent 的身分與憑證管理 | ✅ 完成 |
-| 05 | [Built-in Tools](05-built-in-tools/) | Code Interpreter、Browser、Web Search | ✅ 完成 |
-| 06 | [Observability](06-observability/) | OTel 追蹤與監控 | ✅ 完成 |
-| 07 | [Evaluations](07-evaluations/) | agent 品質評估與 Optimization（建議 + A/B test） | ✅ 完成 |
-| 08 | [Policy](08-policy/) | 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails） | ✅ 完成 |
-| 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | ✅ 完成 |
-| 90 | [框架整合](90-integrations/) | 框架 × 元件對照：Strands、LangGraph、Claude Agent SDK 等 | ✅ 完成 |
-| 91 | [技術選型調研工作包](91-work-packages/) | 把「每人一台對話 agent」的關鍵假設切成 8 個可發包的 AWS 實測工作包，每個檢核點標示來源等級、要求帳單數字 | 🔲 待領取 |
+| # | 元件 | 一句話定位 | 狀態 | 延伸調研 |
+|---|------|-----------|------|---------|
+| 00 | [總覽](00-overview/) | 整體架構、計費、跟 Bedrock Agents 的差別 | ✅ 完成 | ✅ 2 篇 |
+| 01 | [Runtime](01-runtime/) | Serverless 的 agent / tool 執行環境 | ✅ 完成 | ✅ 2 篇 |
+| 02 | [Memory](02-memory/) | 代管的短期 / 長期記憶 | ✅ 完成 | ✅ 3 篇 |
+| 03 | [Gateway](03-gateway/) | agent 流量的統一入口：MCP 工具、HTTP 代理、LLM 代理（含 Registry） | ✅ 完成 | ✅ 3 篇 |
+| 04 | [Identity](04-identity/) | Agent 的身分與憑證管理 | ✅ 完成 | ✅ 3 篇 |
+| 05 | [Built-in Tools](05-built-in-tools/) | Code Interpreter、Browser、Web Search | ✅ 完成 | ✅ 3 篇 |
+| 06 | [Observability](06-observability/) | OTel 追蹤與監控 | ✅ 完成 | ⬜ |
+| 07 | [Evaluations](07-evaluations/) | agent 品質評估與 Optimization（建議 + A/B test） | ✅ 完成 | ✅ 3 篇 |
+| 08 | [Policy](08-policy/) | 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails） | ✅ 完成 | ✅ 3 篇 |
+| 09 | [Payments](09-payments/) | agent 自動付費（x402 / MPP）與預算控管 | ✅ 完成 | ⬜ |
+| 90 | [框架整合](90-integrations/) | 框架 × 元件對照：Strands、LangGraph、Claude Agent SDK 等 | ✅ 完成 | ⬜ |
+| 91 | [技術選型調研工作包](91-work-packages/) | 把「每人一台對話 agent」的關鍵假設切成 8 個可發包的 AWS 實測工作包，每個檢核點標示來源等級、要求帳單數字 | 🔲 待領取 | — |
 
 官方元件清單中的 Harness、Optimization、Registry 沒有獨立的資料夾，分別併入 [00 延伸](00-overview/harness-vs-runtime.md)、[07](07-evaluations/)、[03](03-gateway/)。
 
-每篇文件的最後都有「延伸調研方向」，列出三個可以繼續深入的題目。
+每篇文件的最後都有「延伸調研方向」，列出三個可以繼續深入的題目（91 是行動清單，沒有這一節）。「延伸調研」欄是已完成的延伸筆記數量；⬜ 表示還沒做。
 
 ## Nova Act
 
@@ -57,7 +57,8 @@ AWS 的瀏覽器 UI 自動化 agent 服務：用自然語言 + Python 寫 workfl
 - 每個元件資料夾的 `README.md` 是研究主檔：核心概念、研究問題、與其他元件的關係、參考資料
 - 內容多了再拆出子筆記（例如 `01-runtime/session-lifecycle.md`）
 - 實作 / PoC 放在各元件底下的 `experiments/`
-- 跨元件的參考資料放 `refs/`
+- `9x` 是跨元件的篇章：90 是框架整合的研究筆記；91 是把研究結論落到專案的**調研工作包**，由同事在 AWS 實測後回填，回填結果會更正 00–09 的對應段落
+- 參考資料寫在各篇的「參考資料」一節，不另設集中目錄
 - `nova-act/` 內部沿用同一套慣例（`00-overview/README.md` 這類編號資料夾）；它的延伸題範圍是「Nova Act 已研究的篇章」，可以引用 AgentCore 各篇
 
 ## 參考資料

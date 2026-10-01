@@ -219,7 +219,7 @@ sequenceDiagram
 
 ## 實驗
 
-- [多租戶隔離的後端參考實作](experiments/tenant-guard/)：9 個案例本機測試通過
+- [多租戶隔離的後端參考實作](experiments/tenant-guard/)：9 個案例本機測試通過；**將由 [WP5](../91-work-packages/WP5-user-state-isolation.md) 改成真的 AWS client 實測**
 - [萃取品質比較](experiments/extraction-compare/)：比較工具本機實跑過（只用示範資料）；AWS 實驗程式**沒有實跑過**
 - [月費與檢索速率估算](experiments/cost-model/)：已實跑，結果整理在延伸文件中
 

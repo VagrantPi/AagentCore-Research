@@ -8,4 +8,4 @@
 - 憑證來源（環境變數、MMDS 端點；只檢查存在與否，不印出內容）
 - `aws sts get-caller-identity`、`pip download`、磁碟空間、CPU 數、matplotlib 存圖
 
-只用 Python 標準函式庫。撰寫時只在本機（macOS）跑過，確認腳本本身可以執行；**還沒有在 Code Interpreter 裡跑過**，三種模式的實際結果待填。
+只用 Python 標準函式庫。撰寫時只在本機（macOS）跑過，確認腳本本身可以執行；**還沒有在 Code Interpreter 裡跑過**，三種模式的實際結果待填。**將由 [WP3](../../../91-work-packages/WP3-sandbox-egress.md) 實跑，結果回填到本檔。**

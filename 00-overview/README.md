@@ -244,7 +244,7 @@ sequenceDiagram
 ## 延伸調研
 
 - [Harness 與 Runtime 的選擇細節](harness-vs-runtime.md)：能力邊界、逃生口、踩雷清單、export 路徑
-- [自建 vs 用 AgentCore](build-vs-buy.md)：各元件自建難度、綁定程度分析、混合策略
+- [自建 vs 用 AgentCore](build-vs-buy.md)：各元件自建難度、綁定程度分析、混合策略。其中的難度與成本是判斷，將由 [WP6](../91-work-packages/WP6-oss-alternatives.md) 用實測與官網價格更正
 
 ## 研究問題
 
