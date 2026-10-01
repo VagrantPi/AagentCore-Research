@@ -87,7 +87,7 @@ sequenceDiagram
 | **Summary** | 每段對話的滾動摘要 | 以 actor + session 為範圍 | — |
 | **Episodic** | 「一段完整經歷」：情境、意圖、做法、結果，外加跨經歷的 **reflection**（心得、學到的教訓） | 「部署時遇到錯誤 X，改用方法 Y 解決」 | 可選 strategy / actor / session 層級 |
 
-- Semantic 策略**只看 USER 和 ASSISTANT 的訊息**。
+- Semantic 策略頁說**只看 USER 和 ASSISTANT 的訊息**；但新版的公開 prompt 也會從 JSON payload 萃取，文件之間不一致。
 - **Episodic 的特別之處：**
   - **要等系統判斷「這段經歷結束了」才會產生 record**，所以比其他策略慢。
   - 建議在 event 裡**帶上 TOOL 的結果**，效果會更好。
@@ -98,8 +98,8 @@ sequenceDiagram
 
 |  | Built-in | Built-in with overrides | Self-managed |
 |--|----------|------------------------|--------------|
-| 誰執行萃取用的 LLM | AgentCore | AgentCore 的 pipeline，但**模型在你的帳號裡跑**（需要提供 `memoryExecutionRoleArn`） | 你自己 |
-| 可以改的部分 | 只有觸發設定 | 萃取、整併、reflection 的 **prompt 指令**，以及**使用的 Bedrock 模型** | 全部：模型、prompt、schema、namespace |
+| 誰執行萃取用的 LLM | AgentCore | AgentCore 的 pipeline，但**模型在你的帳號裡跑**（需要提供 `memoryExecutionRoleArn`；`modelId` 必填） | 你自己 |
+| 可以改的部分 | 只有觸發設定 | 萃取、整併、reflection 的 **prompt 指令**（文件說 `appendToPrompt` 會**取代**預設指示，但官方範例當成附加使用，見[延伸](extraction-tuning.md#結論先講)），以及**使用的 Bedrock 模型** | 全部：模型、prompt、schema、namespace |
 | 不能改的部分 | — | **輸出的 schema**；整併操作的名稱（`AddMemory` 等）不能改，改了 pipeline 會壞掉 | — |
 | 長期記憶的儲存費 | 每千筆每月 $0.75 | 每千筆每月 $0.25，模型費用另計 | 每千筆每月 $0.25，pipeline 成本另計 |
 | 失敗模式 | 只有超過速率限制 | 另外還有模型權限、throttling、timeout 等問題 | 自己負責 |
@@ -132,9 +132,9 @@ sequenceDiagram
 
 | 層 | 做法 | 能擋住什麼 | 擋不住什麼 |
 |----|------|-----------|-----------|
-| **IAM：讀取** | 用 `bedrock-agentcore:namespace`（完全相等）或 `bedrock-agentcore:namespacePath`（`StringLike`）限制 `RetrieveMemoryRecords` 等 API | 不同 IAM principal 之間讀取彼此的資料 | **多個使用者共用同一個 principal 的情況**（最常見：後端用同一個 role 服務所有使用者） |
+| **IAM：讀取** | 用 `bedrock-agentcore:namespace`（完全相等）或 `bedrock-agentcore:namespacePath`（`StringLike`）限制 `RetrieveMemoryRecords` 等 API；短期記憶的 event API 另有 `actorId`、`sessionId` 兩個 key（⚠️ `namespacePath` 與 `namespaceVariable` 只出現在開發指南，IAM 官方參考沒有列出，見[延伸](multi-tenant-isolation.md#第-2-層iam-條件)） | 不同 IAM principal 之間讀取彼此的資料 | **多個使用者共用同一個 principal 的情況**（最常見：後端用同一個 role 服務所有使用者） |
 | **IAM：寫入** | 用 `bedrock-agentcore:namespaceVariable/<key>` 限制 `CreateEvent` 能帶入哪些值，例如 `orgname` 只能是 `acme` | 某個租戶的 principal 把資料寫進別的租戶 | 同上 |
-| **Gateway + Cedar（FGAC）** | 讓 Memory 經由 Gateway 對外，用 Cedar policy 規定 `context.input.actorId == principal.getTag("sub")` | **以 JWT 身分區分個別使用者**，可以做到 per-user 隔離 | **批次 API**（`BatchCreate` / `Update` / `DeleteMemoryRecords`）無法逐筆評估，只能用 IAM 整個允許或整個拒絕 |
+| **Gateway + Cedar（FGAC）** | 讓 Memory 經由 Gateway 對外，用 Cedar policy 規定 `context.input.actorId == principal.getTag("sub")` | **以 JWT 身分區分個別使用者**，可以做到 per-user 隔離 | **批次 API**（`BatchCreate` / `Update` / `DeleteMemoryRecords`）與 `IngestData` 不經過 Cedar，只能用 IAM 整個允許或整個拒絕 |
 
 - **IAM 評估規則的細節：** 如果 policy 對某個 `namespaceVariable` 設了條件，但請求**沒有帶**這個變數，結果是**拒絕**（而不是略過）。
 - **FGAC 的陷阱：**
@@ -176,7 +176,8 @@ sequenceDiagram
 | 單筆 `CreateEvent` 的訊息數 / 單則訊息大小 / 整個 event 大小 | 100 則 / 100 KB / 10 MB | ✗ |
 | `CreateEvent` 速率（整個帳號） | 200 TPS | ✓ |
 | **`CreateEvent` 速率（每個 actor、每個 session）** | **5 TPS**（含對話內容時） | ✗ |
-| `RetrieveMemoryRecords` 速率 | 30 TPS | ✓ |
+| `RetrieveMemoryRecords` / `ListMemoryRecords` 速率 | 各 30 TPS | ✓ |
+| `ListEvents` 速率（每個 actor、每個 session） | 20 TPS | ✗ |
 | 長期萃取的 token 速率 | 每分鐘 150,000 token | ✓ |
 | Episodic 萃取的 token 速率（每個 session） | 每分鐘 50,000 token | ✗ |
 
@@ -209,6 +210,18 @@ sequenceDiagram
 - [x] namespace 設計（例如 `{actorId}/...`）與多租戶隔離
 - [x] 檢索方式與延遲（語意搜尋與 metadata 過濾；官方沒有萃取延遲的 SLA）
 - [x] 資料保留與刪除（event 保留 7–365 天、刪除 API、串流的刪除事件）
+
+## 延伸調研
+
+- [Memory 多租戶隔離的參考實作](multi-tenant-isolation.md)：四層防線、各 API 可用的 IAM condition key、Cedar 的限制、批次 API 與 reflection 的缺口、刪除某個使用者的全部資料
+- [萃取品質與 prompt override 調校](extraction-tuning.md)：官方 prompt 的重點、override 的結構與寫法、品質指標與比較方法、self-managed 的介面
+- [Memory 在 Runtime session 中的讀寫模式與成本](read-write-cost.md)：Strands 每輪實際的 API 呼叫次數、月費估算、檢索速率瓶頸、Harness 與自己控制的取捨
+
+## 實驗
+
+- [多租戶隔離的後端參考實作](experiments/tenant-guard/)：9 個案例本機測試通過
+- [萃取品質比較](experiments/extraction-compare/)：比較工具本機實跑過（只用示範資料）；AWS 實驗程式**沒有實跑過**
+- [月費與檢索速率估算](experiments/cost-model/)：已實跑，結果整理在延伸文件中
 
 ## 參考資料
 
