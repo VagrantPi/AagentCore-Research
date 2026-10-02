@@ -1,0 +1,10 @@
+test,step,version,boot_token,mem,disk,disk_error,runtime_version
+idle,put,1,32710758e3369e60,idle-b3f96f,idle-b3f96f,,
+idle,within_idle_30s,1,32710758e3369e60,idle-b3f96f,idle-b3f96f,,
+idle,after_idle_90s,1,0d9b47fa1b62ab82,,idle-b3f96f,,
+stop,put,1,cb1a6673ec07a970,stop-b3f96f,stop-b3f96f,,
+stop,after_stop,1,cca98bbcf94414c3,,stop-b3f96f,,
+update,put,1,81ae468d8ce54476,update-b3f96f,update-b3f96f,,1
+update,after_update_default,2,3faba32b7845087b,,,,2
+pinned,put,2,fde1751d57998437,pinned-b3f96f,pinned-b3f96f,,2
+pinned,after_update_pinned,2,0252619719ecde94,,pinned-b3f96f,,3

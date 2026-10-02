@@ -5,6 +5,8 @@
   deploy      依矩陣建立各變體的 runtime，等待 READY，並把狀態寫入 state.json
   measure     每個變體跑 N 次「新 session 冷啟動 → 同 session 熱呼叫」，結果寫入 results.csv
   burst       對單一變體並發建立 M 個新 session，觀察被 throttle 的比例與實際速率
+  concurrent  同一個 session 同時送 N 個長請求（模擬多個聊天室），結果寫入 concurrent.csv
+  prewarm     先送空請求預喚醒，隔幾秒再送真正的請求，結果寫入 prewarm.csv
   cleanup     刪除 state.json 裡記錄的 runtime
 
 用法見同目錄的 README.md。
@@ -28,10 +30,14 @@ from botocore.exceptions import ClientError
 HERE = Path(__file__).parent
 STATE = HERE / "state.json"
 RESULTS = HERE / "results.csv"
+CONCURRENT = HERE / "concurrent.csv"
+PREWARM = HERE / "prewarm.csv"
 ZIP_KEY = "agentcore-coldstart/agent.zip"
 
 # 壓低 lifecycle，避免閒置 session 持續計費
 LIFECYCLE = {"idleRuntimeSessionTimeout": 60, "maxLifetime": 600}
+# 依 WP0 的資源 tag 規則；owner 由 deploy --owner 補上
+TAGS = {"wp": "WP1", "project": "hyfai"}
 
 
 def clients(region, retries=True):
@@ -72,8 +78,16 @@ def variants(args):
             for nn, net in networks:
                 if an == "bigimg" and nn == "vpc":
                     continue
-                out.append({"name": f"cs_{pv.lower()}_{an}_{nn}", "platform": pv,
+                out.append({"name": f"wp1_cs_{pv.lower()}_{an}_{nn}", "platform": pv,
                             "artifact": art, "network": net})
+    if args.blocking:
+        # 並行測試的對照組：單執行緒 server，一次只處理一個請求
+        out.append({"name": "wp1_cs_v1_img_pub_blk", "platform": "V1", "artifact": artifacts[0][1],
+                    "network": networks[0][1], "env": {"AGENT_MODE": "blocking"}})
+    if args.busy:
+        # 長請求對照組：處理中 /ping 回 HealthyBusy
+        out.append({"name": "wp1_cs_v1_img_pub_busy", "platform": "V1", "artifact": artifacts[0][1],
+                    "network": networks[0][1], "env": {"PING_BUSY": "1"}})
     return out
 
 
@@ -109,7 +123,8 @@ def cmd_deploy(args):
         resp = ctl.create_agent_runtime(
             agentRuntimeName=v["name"], roleArn=args.role_arn,
             agentRuntimeArtifact=v["artifact"], networkConfiguration=v["network"],
-            lifecycleConfiguration=LIFECYCLE, platformVersion=v["platform"])
+            lifecycleConfiguration=LIFECYCLE, platformVersion=v["platform"],
+            environmentVariables=v.get("env", {}), tags={**TAGS, "owner": args.owner})
         v.update(id=resp["agentRuntimeId"], arn=resp["agentRuntimeArn"])
         state["runtimes"].append(v)
         save_state(state)
@@ -127,16 +142,16 @@ def ensure_mmdsv2(ctl, v):
         agentRuntimeId=v["id"], roleArn=v.get("role_arn") or ARGS.role_arn,
         agentRuntimeArtifact=v["artifact"], networkConfiguration=v["network"],
         lifecycleConfiguration=LIFECYCLE, platformVersion=v["platform"],
-        metadataConfiguration={"requireMMDSV2": True})
+        environmentVariables=v.get("env", {}), metadataConfiguration={"requireMMDSV2": True})
     print(f"{v['name']}: enabled MMDSv2, waiting for READY ...")
     print(f"{v['name']}: {wait_ready(ctl, v['id'])}")
 
 
-def invoke(data, arn, session_id):
+def invoke(data, arn, session_id, payload=b'{"prompt":"ping"}'):
     t0 = time.perf_counter()
     resp = data.invoke_agent_runtime(agentRuntimeArn=arn, runtimeSessionId=session_id,
                                      qualifier="DEFAULT", contentType="application/json",
-                                     payload=b'{"prompt":"ping"}')
+                                     payload=payload)
     body = json.loads(resp["response"].read())
     return round((time.perf_counter() - t0) * 1000, 1), body
 
@@ -171,13 +186,17 @@ def cmd_measure(args):
                                       qualifier="DEFAULT")
             print(f"{v['name']} #{i}: cold={cold_ms}ms warm={warm_ms}ms boot={cold['boot_token']}")
             time.sleep(args.gap)
-    new_file = not RESULTS.exists()
-    with RESULTS.open("a", newline="") as f:
+    append_csv(RESULTS, rows)
+    summarize(rows)
+
+
+def append_csv(path, rows):
+    new_file = not path.exists()
+    with path.open("a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         if new_file:
             w.writeheader()
         w.writerows(rows)
-    summarize(rows)
 
 
 def pct(xs, p):
@@ -201,24 +220,104 @@ def cmd_burst(args):
     v = next(r for r in load_state()["runtimes"] if r["name"] == args.variant)
 
     def one(_):
-        t = time.perf_counter()
-        try:
-            invoke(data, v["arn"], new_session_id())
-            return "ok", t
-        except ClientError as e:
-            return e.response["Error"]["Code"], t
+        return try_invoke(data, v["arn"], new_session_id(), b'{"prompt":"ping"}')
 
     start = time.perf_counter()
     with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
         results = list(pool.map(one, range(args.sessions)))
     elapsed = time.perf_counter() - start
     codes = {}
-    for code, _ in results:
+    for code, _, _ in results:
         codes[code] = codes.get(code, 0) + 1
     ok = codes.get("ok", 0)
     print(f"{args.variant}: {args.sessions} new sessions, concurrency={args.concurrency}, "
           f"elapsed={elapsed:.1f}s, ok={ok} ({ok / elapsed:.2f}/s), results={codes}")
+    # boot_age_s 很小代表 process 是為這個請求才啟動的（真冷啟動），很大代表來自預熱池
+    oks = [(ms, b["boot_age_s"]) for c, ms, b in results if c == "ok"]
+    for label, xs in (("pool", [ms for ms, age in oks if age >= 5]),
+                      ("fresh", [ms for ms, age in oks if age < 5])):
+        if xs:
+            print(f"  {label}: n={len(xs)} latency p50={pct(xs, 50):.0f}ms p90={pct(xs, 90):.0f}ms")
+    append_csv(HERE / "burst.csv", [{"variant": args.variant, "status": c, "latency_ms": ms,
+                                     "boot_age_s": b.get("boot_age_s")} for c, ms, b in results])
     print("註：這些 session 沒有主動 stop，會在閒置 60 秒後自動回收")
+
+
+def find_variant(name):
+    return next(r for r in load_state()["runtimes"] if r["name"] == name)
+
+
+def try_invoke(data, arn, sid, payload):
+    """回傳 (狀態, 延遲 ms, 回應)；失敗時狀態是錯誤碼，不重試。"""
+    t0 = time.perf_counter()
+    try:
+        ms, body = invoke(data, arn, sid, payload)
+        return "ok", ms, body
+    except ClientError as e:
+        return e.response["Error"]["Code"], round((time.perf_counter() - t0) * 1000, 1), {}
+
+
+def cmd_concurrent(args):
+    """WP1 #8：同一個 session 同時送 N 個各睡 S 秒的請求，模擬一位使用者的多個聊天室。"""
+    _, data = clients(args.region, retries=False)
+    rows = []
+    payload = json.dumps({"sleep": args.sleep}).encode()
+    for name in args.variants.split(","):
+        v = find_variant(name)
+        for i in range(args.trials):
+            sid = new_session_id()
+            status, cold_ms, _ = try_invoke(data, v["arn"], sid, b'{"prompt":"ping"}')  # 先把 VM 叫起來
+            with ThreadPoolExecutor(max_workers=args.n) as pool:
+                futs = [pool.submit(try_invoke, data, v["arn"], sid, payload) for _ in range(args.n)]
+                res = [f.result() for f in futs]
+            for j, (code, ms, body) in enumerate(res):
+                rows.append({"variant": name, "trial": i, "req": j, "status": code, "latency_ms": ms,
+                             "boot_token": body.get("boot_token"),
+                             "inflight_at_start": body.get("inflight_at_start"),
+                             "pings_during": body.get("pings_during"),
+                             "handler_s": body.get("handler_s")})
+            try:
+                data.stop_runtime_session(agentRuntimeArn=v["arn"], runtimeSessionId=sid,
+                                          qualifier="DEFAULT")
+            except data.exceptions.ResourceNotFoundException:
+                print(f"{name} #{i}: session 已被平台終止")
+            print(f"{name} #{i}: warmup={status}/{cold_ms}ms | " + " | ".join(
+                f"{c} {ms / 1000:.1f}s inflight={b.get('inflight_at_start')} pings={b.get('pings_during')}"
+                for c, ms, b in res))
+            time.sleep(args.gap)
+    append_csv(CONCURRENT, rows)
+
+
+def cmd_prewarm(args):
+    """WP1 #7：開聊天室時先送空請求（不等它回來），D 秒後送真正的請求。"""
+    _, data = clients(args.region, retries=False)
+    rows = []
+    for name in args.variants.split(","):
+        v = find_variant(name)
+        for i in range(args.trials):
+            sid = new_session_id()
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                warm = pool.submit(try_invoke, data, v["arn"], sid, b"{}")
+                time.sleep(args.delay)
+                code, real_ms, real = try_invoke(data, v["arn"], sid, b'{"prompt":"ping"}')
+                pcode, pre_ms, pre = warm.result()
+            rows.append({"variant": name, "trial": i, "delay_s": args.delay,
+                         "prewarm_status": pcode, "prewarm_ms": pre_ms,
+                         "real_status": code, "real_ms": real_ms,
+                         "real_first_request": real.get("first_request"),
+                         "same_boot": pre.get("boot_token") == real.get("boot_token")})
+            data.stop_runtime_session(agentRuntimeArn=v["arn"], runtimeSessionId=sid,
+                                      qualifier="DEFAULT")
+            print(f"{name} #{i}: prewarm={pcode}/{pre_ms}ms real={code}/{real_ms}ms")
+            time.sleep(args.gap)
+    append_csv(PREWARM, rows)
+    print(f"\n{'variant':<26}{'ok':>4}{'real p50':>10}{'real p90':>10}{'prewarm p50':>13}")
+    for name in dict.fromkeys(r["variant"] for r in rows):
+        rs = [r for r in rows if r["variant"] == name and r["real_status"] == "ok"]
+        if rs:
+            print(f"{name:<26}{len(rs):>4}{pct([r['real_ms'] for r in rs], 50):>10.0f}"
+                  f"{pct([r['real_ms'] for r in rs], 90):>10.0f}"
+                  f"{pct([r['prewarm_ms'] for r in rs], 50):>13.0f}")
 
 
 def cmd_cleanup(args):
@@ -248,6 +347,9 @@ def main():
     d.add_argument("--bucket", help="direct code zip 所在的 bucket（可選）")
     d.add_argument("--subnets", help="逗號分隔；給了才會建立 VPC 變體")
     d.add_argument("--security-groups")
+    d.add_argument("--blocking", action="store_true", help="另建單執行緒 agent 的 V1 變體（並行測試對照組）")
+    d.add_argument("--busy", action="store_true", help="另建處理中 /ping 回 HealthyBusy 的 V1 變體")
+    d.add_argument("--owner", required=True, help="tag owner 的值，例如 kais")
 
     m = sub.add_parser("measure")
     m.add_argument("--role-arn", required=True, help="若需要補開 MMDSv2 時使用")
@@ -260,12 +362,26 @@ def main():
     u.add_argument("--sessions", type=int, default=60)
     u.add_argument("--concurrency", type=int, default=30)
 
+    c = sub.add_parser("concurrent")
+    c.add_argument("--variants", required=True, help="逗號分隔")
+    c.add_argument("--n", type=int, default=3, help="同時送幾個請求")
+    c.add_argument("--sleep", type=float, default=20, help="每個請求在 handler 裡睡幾秒")
+    c.add_argument("--trials", type=int, default=3)
+    c.add_argument("--gap", type=float, default=2.0)
+
+    w = sub.add_parser("prewarm")
+    w.add_argument("--variants", required=True, help="逗號分隔")
+    w.add_argument("--delay", type=float, default=3.0, help="預喚醒後隔幾秒送真正的請求")
+    w.add_argument("--trials", type=int, default=20)
+    w.add_argument("--gap", type=float, default=2.0)
+
     sub.add_parser("cleanup")
 
     global ARGS
     ARGS = p.parse_args()
     {"build-zip": cmd_build_zip, "deploy": cmd_deploy, "measure": cmd_measure,
-     "burst": cmd_burst, "cleanup": cmd_cleanup}[ARGS.cmd](ARGS)
+     "burst": cmd_burst, "concurrent": cmd_concurrent, "prewarm": cmd_prewarm,
+     "cleanup": cmd_cleanup}[ARGS.cmd](ARGS)
 
 
 if __name__ == "__main__":
