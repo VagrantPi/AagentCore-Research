@@ -34,7 +34,7 @@
    - server 在 AWS：用 PrivateLink（VPC endpoint service）或 VPC peering 讓 private subnet 連得到；
    - server 不在 AWS：只能開 NAT，再用 Network Firewall 只放行 server 的網域。
    在 VM 裡確認：自家 server 連得到；任意外部網站連不到。
-6. 在三種模式下各執行一段 5 分鐘的程式，隔天拉帳單。另外記錄每個 VPC endpoint、PrivateLink 或 Network Firewall 的月費（Pricing 頁，標「官網價」）。
+6. 在三種模式下各執行一段 5 分鐘的程式，用 WP0 的方法估算費用。另外記錄每個 VPC endpoint、PrivateLink 或 Network Firewall 的月費（Pricing 頁，標「官網價」）。
 
 ## 檢核點
 

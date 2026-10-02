@@ -13,7 +13,7 @@
 ## 四層設計
 
 1. **獨立實驗帳號 + SCP**（最重要）：有 AWS Organizations 就另開一個帳號，套上 `scp.json`。區域已定為東京（`ap-northeast-1`）。
-   - 沒有 Organizations、只能用現有帳號時，跳過這層，只靠第 3、4 層與預算警報。**同帳號的正式資源只靠名稱與 tag 隔開，風險明顯較高。**
+   - 沒有 Organizations、只能用現有帳號時，跳過這層，只靠第 3、4 層與清理確認（本帳號被 SCP 禁用 Budgets，沒有預算警報）。**同帳號的正式資源只靠名稱與 tag 隔開，風險明顯較高。**
 2. **IAM Identity Center 發短效憑證**：建 permission set（例如 `AgentCoreExperimenter`），session 時長 4 小時、強制 MFA，只指派到實驗帳號。同事用 `aws sso login --profile wp-lab` 登入。
    - 不建 IAM user、不發長期 access key。同事用 AI 輔助開發，憑證不放 `.env` 或 repo，AI 工具才不容易讀到或貼進對話與 log；過期後外流也無效。
 3. **權限政策**：`permission-set.json`。只開實驗會用到的服務；自建資源用 `wp-` 前綴命名；角色只能建在 `/wp/` 路徑下。
@@ -32,11 +32,11 @@
 
 **Browser 權限的歸屬（設計變更後）：** Browser 改由自家 MCP server 呼叫（見 [WP2](../WP2-capability-boundary.md#設計變更背景)）。所以 Runtime 的 **execution role 不給任何 Browser 權限**；Browser 相關權限只給自家 server 使用的角色（server 在 AWS 上就用它的 IAM role，不在 AWS 上用 IAM Roles Anywhere 這類短效憑證）。`wp-boundary.json` 目前允許 `bedrock-agentcore:*`，做 WP2 #6 時要另建一個**不含** Browser 動作的 execution role 來驗證。
 
-**刻意不給的：** Cost Explorer 與 Billing。[WP0](../WP0-cost-baseline.md) 和帳單由帳號負責人處理。
+**不給的：** Cost Explorer 與 Billing。本帳號被公司 Organizations 的 SCP 禁用，任何人都拿不到；費用改用估算，見 [WP0](../WP0-cost-baseline.md)。
 
 ## 兜底
 
-- **AWS Budgets：** 每日預算警報（WP0）。可加 Budget Action：超過預算時自動對這個 permission set 套上全面 Deny。
+- **沒有預算警報：** Budgets 被 SCP 禁用。改靠每包結束的清理確認，以及 permission set 的 4 小時 session 上限。
 - **CloudTrail：** 保持開啟，事後可查操作紀錄。
 - **結束後：** 撤銷 permission set 的指派；依 `wp` tag 或 `wp-` 前綴清掉資源。
 

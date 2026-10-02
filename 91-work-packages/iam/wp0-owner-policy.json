@@ -1,0 +1,24 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WP0AgentCoreTokyo",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:*",
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-northeast-1" } }
+    },
+    {
+      "Sid": "WP0UsageLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:PutDeliverySource", "logs:GetDeliverySource", "logs:DeleteDeliverySource", "logs:DescribeDeliverySources",
+        "logs:PutDeliveryDestination", "logs:GetDeliveryDestination", "logs:DeleteDeliveryDestination", "logs:DescribeDeliveryDestinations",
+        "logs:CreateDelivery", "logs:GetDelivery", "logs:DeleteDelivery", "logs:DescribeDeliveries",
+        "logs:CreateLogGroup", "logs:PutRetentionPolicy", "logs:DeleteLogGroup", "logs:DescribeLogGroups",
+        "logs:FilterLogEvents", "logs:GetLogEvents", "logs:StartQuery", "logs:GetQueryResults"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

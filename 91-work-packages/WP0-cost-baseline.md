@@ -1,14 +1,34 @@
 # WP0 成本量測基礎
 
-> 前置工作。目的：讓之後每個 WP 都能用同一種方法拉出**帳單數字**，而不是單價換算。
+> 前置工作。目的：讓之後每個 WP 都能用同一種方法算出**實際用量換算的費用**，而且算法一致、可以重現。
 >
 > 估點：2。優先序：前置（不參與排序）。前置：無。分群：A。
 
+## 為什麼不用帳單（2026-10-02 確認）
+
+公司 AWS Organizations 的管理帳號（`070221791376`）有一條 SCP（`p-b6ce2j3k`），**明確禁止**實驗帳號 `050571774557` 使用 Budgets 與 Cost Explorer。SCP 的拒絕高於任何 IAM 權限，這個權限拿不到。所以：
+
+- **拿不到帳單數字**，也不能依 tag 拉金額、不能設預算警報。
+- 成本一律改成「**實際用量 × 官網單價**」，標「估算」。用量來自 AgentCore 自己吐的 log 與 metric，不是猜的。
+- 資源仍然要加 tag（見下方），日後管理帳號若願意提供帳單，可以回頭對數字。
+
 ## 目標
 
-1. 任何 WP 開的資源都能依 tag 從 Cost Explorer 拉出實際金額。
-2. 預算警報生效，避免實驗失控。
-3. 驗證 Runtime 的 `USAGE_LOGS` 真的能給出每個 session 的資源用量（這是 WP5 分攤每位使用者成本的前提）。
+1. 驗證 Runtime 的 `USAGE_LOGS` 真的能給出每個 session 的資源用量（這是 WP5 分攤每位使用者成本的前提）。
+2. 寫好依用量估算費用的腳本，讓之後每個 WP 用同一套算法。
+3. 沒有預算警報，改用「每包結束清資源 + 清理確認」兜底。
+
+## 資源 tag 規則（所有 WP 都遵守）
+
+每個建立的資源都加這三個 tag：
+
+| Key | Value | 說明 |
+|---|---|---|
+| `wp` | `WP0`…`WP7` | 屬於哪個工作包 |
+| `owner` | 負責人，例如 `kais`、`roman` | 誰建的、誰要清 |
+| `project` | `hyfai` | 公司規定，所有新開的服務都要有 |
+
+資源名稱用 `wp-`（或 `wp0_` 這類，視服務的命名規則）開頭，IAM 角色建在 `/wp/` 路徑下。
 
 ## 前提
 
@@ -16,35 +36,34 @@
 |---|---|---|
 | Runtime 可以開啟 `USAGE_LOGS`，內容是每個 session 每秒的 vCPU-hours 和 GB-hours | `[官方已寫]`，研究庫寫成事實但從未實跑 | [06 Observability](../06-observability/README.md) |
 | 服務提供的 `CPUUsed-vCPUHours` / `MemoryUsed-GBHours` metric 最多延遲 60 分鐘，而且不等於帳單 | `[官方已寫]` | 同上 |
-| Cost Explorer 依 tag 分組需要先啟用 cost allocation tag，啟用後約 24 小時才會出現 | `[官方已寫]`（AWS 通用） | — |
+| Runtime v1、Code Interpreter、Browser 單價：$0.0895 / vCPU-hour、$0.00945 / GB-hour | `[官方已寫]` | [00 總覽的定價表](../00-overview/README.md) |
 
 ## 步驟
 
-1. **AWS Budgets：** 建一個每日成本預算（例如 $50 / 日），警報送到團隊信箱或 Slack。送一次測試通知確認收得到。
-2. **啟用 cost allocation tag：** 在 Billing console 啟用 `wp` 和 `owner` 兩個 user-defined tag。**啟用後要等 24 小時**，所以 WP0 要最先做。
-3. **寫拉帳單的腳本**（放在本目錄 `scripts/cost_by_wp.py`）：呼叫 Cost Explorer `GetCostAndUsage`，依 `wp` tag 分組，輸出每個 WP 的 UnblendedCost 和依服務的細項。輸出 CSV，讓各 WP 直接貼進回填表。
-4. **測試 Runtime：** 建一個最小的 Runtime（研究庫 `01-runtime/experiments/cold-start/agent/` 的範例 agent 即可），加 tag `wp=WP0`，開啟 `USAGE_LOGS`，呼叫幾次並讓它跑 10 分鐘，然後刪除。
-5. 隔天：用腳本拉 `wp=WP0` 的金額；到 CloudWatch Logs 看 `USAGE_LOGS` 的內容。
+1. **測試 Runtime：** 部署研究庫 `01-runtime/experiments/cold-start/agent/` 的最小 agent，加上三個 tag，開啟 `USAGE_LOGS` 投遞到 CloudWatch Logs。
+2. 呼叫幾個 session，之後讓它閒置到 session 逾時（預設 15 分鐘）。
+3. 看 `USAGE_LOGS` 的內容；和 `AWS/Bedrock-AgentCore` 的 `CPUUsed-vCPUHours`、`MemoryUsed-GBHours` 對照。
+4. 寫估算腳本 `scripts/usage_cost.py`：讀 `USAGE_LOGS`，依 session 加總 vCPU-hours、GB-hours，乘上單價，輸出 CSV。
+5. 刪除所有資源。
 
 ## 檢核點
 
 | # | 檢核點 | 來源等級 | 判定 |
 |---|---|---|---|
-| 1 | Budgets 測試通知有收到 | — | 是 / 否 |
-| 2 | 隔天 Cost Explorer 能依 `wp=WP0` 看到那個測試 Runtime 的金額 | `[官方已寫]` | 金額（USD） |
-| 3 | `USAGE_LOGS` 裡有每個 session 的紀錄，欄位包含 session ID、vCPU-hours、GB-hours | `[官方已寫]`，未實證 | 貼一筆 log 樣本 |
-| 4 | `USAGE_LOGS` 加總的 vCPU-hours × 單價，和 Cost Explorer 的金額差多少 | `[推測]`（研究庫說「不等於帳單」） | 差異百分比 |
-| 5 | 10 分鐘閒置的 Runtime 實際被收了多少錢（驗證「閒置時記憶體照算」） | `[官方已寫]` | 金額 |
+| 1 | `USAGE_LOGS` 裡有每個 session 的紀錄，欄位包含 session ID、vCPU-hours、GB-hours | `[官方已寫]`，未實證 | 貼一筆 log 樣本 |
+| 2 | `USAGE_LOGS` 加總和 `CPUUsed-vCPUHours` / `MemoryUsed-GBHours` metric 差多少 | `[推測]` | 差異百分比 |
+| 3 | session 閒置期間，記憶體的 GB-hours 是否繼續累積（驗證「閒置時記憶體照算」） | `[官方已寫]` | 是 / 否；閒置 15 分鐘的估算金額 |
+| 4 | `usage_cost.py` 能從 `USAGE_LOGS` 算出每個 session 的估算金額 | — | CSV |
 
 ## 同事的實驗身分
 
-WP0 由帳號負責人做（Billing、Cost Explorer 不開給同事）。同時要建好給同事用的受限 IAM 身分：SCP、permission set、`wp-boundary`，範本與驗證步驟見 [`iam/`](iam/)。
+同事的受限 IAM 身分範本見 [`iam/`](iam/)。Cost Explorer、Budgets 在這個帳號被 SCP 擋住，任何人都用不到，所以範本裡也不給。
 
 ## 交付
 
-- `scripts/cost_by_wp.py` 與使用說明。
+- `scripts/usage_cost.py` 與使用說明。
 - 本檔案下方的回填區。
-- 把「怎麼拉帳單」的一段寫進 [`_template.md`](_template.md) 的「實際費用」說明（如果和模板寫的不同）。
+- [`_template.md`](_template.md) 的「費用」說明改成估算的做法。
 
 ## 關聯
 

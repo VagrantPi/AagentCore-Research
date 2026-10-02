@@ -18,10 +18,10 @@
 
 ## 步驟
 
-1. 照範例 README 部署（Telegram 或 Slack 任選一個 channel），資源加 tag `wp=WP7`。
+1. 照範例 README 部署（Telegram 或 Slack 任選一個 channel），資源加 tag `wp=WP7`、`owner`、`project=hyfai`。
 2. 新使用者第一次發訊：記錄首則回覆、完整回覆的時間。
 3. 等 idle 逾時後再發訊：記錄工作區還原時間（先在工作區塞 500 個小檔案）。
-4. 模擬 10 位使用者各聊 10 輪，隔天拉帳單。
+4. 模擬 10 位使用者各聊 10 輪，用 WP0 的方法估算費用。
 5. **能力邊界測試：** 以使用者身分要求「查今天的新聞」「幫我寫一支爬蟲抓某網站」，看 OpenClaw 會不會做（預期會，因為範例保留 `exec` 和上網）。再嘗試把 Runtime 改成 VPC 無 NAT（可借用 WP3 的 VPC），看 OpenClaw 還能不能啟動和回話。
 
 ## 檢核點

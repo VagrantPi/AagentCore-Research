@@ -10,7 +10,7 @@
 
 - **研究庫裡 14 個實驗，沒有任何一個在 AWS 上真正跑過**（都是本機、假 client 或合成資料）。
 - 目標架構倚賴的幾項能力，官方文件**沒寫或前後矛盾**：Code Interpreter Sandbox 能否連外、Policy 能否讀陣列型 claim、瀏覽器接手後 agent 端的行為、Live View URL 過期後連線是否中斷、session storage 怎麼計費、V2 快照是否造成狀態重複。
-- 定價只有單價，沒有「我們的使用情境」下的帳單。
+- 定價只有單價，沒有「我們的使用情境」下的實際用量與費用。
 
 接下來一個月時程滿檔、容錯小，所以每個關鍵假設都要在開工前驗過。
 
@@ -21,9 +21,9 @@
    - `[官方已寫]`：官方文件明載，只需跑一次確認版本沒變。
    - `[推測]`：研究庫或討論中的判斷。**必須實跑，沒跑就視為未通過。**
    - `[矛盾]`：官方文件前後不一致。實跑並記錄哪一頁是對的。
-3. **成本必須是帳單數字。** 每包用專屬 tag（`wp=<編號>`、`owner=<人>`）開資源，結束後從 Cost Explorer 依 tag 拉出實際金額，附截圖或 CSV。單價換算的數字另欄標「估算」。
+3. **成本用「實際用量 × 官網單價」估算。** 公司 Organizations 的 SCP 禁止本帳號使用 Cost Explorer 與 Budgets，拿不到帳單（見 [WP0](WP0-cost-baseline.md#為什麼不用帳單2026-10-02-確認)）。用量一律來自 AgentCore 的 `USAGE_LOGS`、CloudWatch metric 或自己的呼叫計數，不用猜的；回填時寫出用量、單價、算式。每個資源都加 `wp=<編號>`、`owner=<人>`、`project=hyfai` 三個 tag。
 4. **失敗也是結果。** 功能不存在或行為不符，回填「否定」並寫替代方案，不要硬做。
-5. **每包結束要清資源。** Runtime、Browser、Memory 都有閒置計費或配額。
+5. **每包結束要清資源。** Runtime、Browser、Memory 都有閒置計費或配額。沒有預算警報，清理確認是唯一的兜底。
 6. **回填用同一份模板：**[`_template.md`](_template.md)。寫在各 WP 檔案最下方的「回填」區。
 7. **沒有 AWS 權限的同事**用受限的實驗身分，設定方式與範本見 [`iam/`](iam/)。
 
@@ -56,7 +56,7 @@
 
 | 優先序 | 編號 | 題目 | 回答的選型問題 | 風險 | 價值 | 估點 | 前置 | 分群 | 負責人 | 狀態 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 前置 | [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的帳單怎麼拉 | — | 前置 | 2 | — | A | Kais | 🟡 腳本完成，AWS 設定待帳號管理員 |
+| 前置 | [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的費用怎麼估算 | — | 前置 | 2 | — | A | Kais | 🟡 Runtime 已部署，等 `USAGE_LOGS` 驗證 |
 | 1 | [WP2](WP2-capability-boundary.md) | 能力邊界：自家 MCP server 依技能授權 | 「只能用買到的技能」能不能由自家 MCP server 強制、agent 繞不過；Browser 包成自家工具可不可行；還要不要 Gateway | 高 | 高 | 8 | WP0、自家 MCP server 測試執行個體 | B | RomanChen | ⬜ |
 | 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死；不能上網時仍連得到自家 MCP server | 高 | 高 | A 半 2、B 半 3 | A 半：WP0；B 半：WP0、WP2 的自家 MCP server 測試執行個體 | A、B 各半 | Kais、RomanChen | ⬜ |
 | 3 | [WP5](WP5-user-state-isolation.md) | 使用者狀態與隔離、每使用者成本 | 資料不外洩、每人成本算得出來 | 高 | 高 | 5 | WP0、一個最小的 Runtime（WP1 步驟 1） | A | Kais | ⬜ |
@@ -65,7 +65,7 @@
 | 6 | [WP6](WP6-oss-alternatives.md) | 不用 AgentCore 的開源方案 | 自架的真實成本與缺口 | 低 | 中 | A 半 5、B 半 5 | — | A、B 各半 | Kais、RomanChen | ⬜ |
 | 7 | [WP7](WP7-openclaw-on-agentcore.md) | OpenClaw on AgentCore 官方範例實跑 | 方案 A 的真實數字，當對照組 | 低 | 低 | 3 | WP0、WP3 的 VPC | B | RomanChen | ⬜ |
 
-- **WP0 不參與排序**：它是所有 WP 拉帳單的前提。Cost Explorer 的 tag 啟用後約 24 小時才出現數據，所以要最先做。
+- **WP0 不參與排序**：它定義所有 WP 共用的費用估算方法與 tag 規則，所以要最先做。
 - **前三名都是「高風險、高價值」**：分別對應產品的兩個核心承諾（只能用買到的技能、資料不外洩）。任何一個被否定，方案 B 就要大改。
 - **WP1 排在 WP5 後面**：冷啟動慢或並行會卡，都有已知替代（預喚醒、V2、一個聊天室一個 session）；資料外洩沒有。
 - ~~**WP4 是功能層級**：否定的結果是「這個功能改做法或延後」，不影響整體架構。~~ WP4 已由其他工程師完成，不列入本次分工；結果請回填到 [WP4 檔案](WP4-browser-takeover.md)的「回填」區。
@@ -81,18 +81,18 @@
 | 負責的 WP（依優先序） | WP0（前置）→ WP3 前半 → WP5 → WP1 → WP6 前半 | WP2 → WP3 後半 → ~~WP4~~ → WP6 後半 → WP7 |
 | WP6 負責的層 | 第 1 層隔離執行環境、第 5 層記憶、第 6 層可觀測與成本 | 第 2 層 agent 框架與技能、第 3 層工具閘道與授權、第 4 層雲端瀏覽器 |
 | WP3 負責的檢核點 | Code Interpreter 沙箱：#1 Sandbox、#2 Public、#4 憑證可讀性、#7 預先打包套件、#6 的沙箱 session 費用 | VPC 與連線：#3 VPC 無 NAT、#5 Runtime 在無 NAT 下啟動、#8 連得到自家 MCP server、#6 的 endpoint／PrivateLink／Network Firewall 月費 |
-| 主要碰的服務 | Runtime、Memory、Code Interpreter、STS、CloudWatch、Cost Explorer | 自家 MCP server、Runtime、Harness、Browser（由自家 server 呼叫）、Code Interpreter、VPC、OpenClaw 官方範例；Gateway 與 Policy 只在選配時碰 |
+| 主要碰的服務 | Runtime、Memory、Code Interpreter、STS、CloudWatch | 自家 MCP server、Runtime、Harness、Browser（由自家 server 呼叫）、Code Interpreter、VPC、OpenClaw 官方範例；Gateway 與 Policy 只在選配時碰 |
 | 估點合計 | 2 + 2 + 5 + 5 + 5 = 19 | 8 + 3 + ~~8~~ + 5 + 3 = 19 |
 
 ### 共用資源：只建一次
 
 | 資源 | 誰建 | 誰用 |
 |---|---|---|
-| 成本 tag 規則與拉帳單腳本（WP0） | A，最先做 | 兩人 |
+| tag 規則與費用估算腳本（WP0） | A，最先做 | 兩人 |
 | 測試身分：使用者 A、B 的 JWT（Cognito） | B，WP2 第一步 | A 在 WP5 用同一組身分測隔離 |
 | 自家 MCP server 的測試執行個體（含 `todo`、包了 Browser 的 `flight` 技能） | B，WP2 步驟 0–2 | B 在 WP3 測連線；A 在 WP5 測使用者 token 被濫用的範圍 |
 | 不開 NAT 的 VPC | B，WP3 | A 在 WP1 的 VPC 組沿用；B 在 WP7 的能力邊界測試沿用 |
-| 最小的 Runtime（WP1 步驟 1） | A，WP5 開始前先部署 | WP5 測 VM 內的憑證；之後 WP1 繼續用 |
+| 最小的 Runtime：`wp0_min-HsBwOc6VWU`（東京，PUBLIC，image `wp-agentcore-coldstart:small`，execution role `/wp/wp0-runtime-exec`） | A，WP0 已部署 | WP0 驗證 `USAGE_LOGS`；WP5 測 VM 內的憑證；之後 WP1 繼續用 |
 | 區域 | 已定：東京（`ap-northeast-1`） | 兩人。公司機器與自家 MCP server 都在東京；亞太區只有東京支援 V2 |
 
 跨群要交接的數字：WP4 的 Browser 每次 session 費用改從其他工程師的結果取得，由 A 放進 WP5 的「每位使用者月費」；A 把 WP1 的冷啟動數字交給 B，當 WP6 比較開源方案、WP7 對照方案 A 的基準。
@@ -122,7 +122,7 @@
    - B 完成 WP2 的 #4 時：Harness 的 `remote_mcp` 若無法每次帶不同使用者的 token，主 agent 確定只能用 Runtime，A 的 WP1 結論直接適用。
 2. **任何阻斷級檢核點出現「否定」時：** 當下通知對方與你，不要等全部做完。
 3. **兩人的阻斷級檢核點都完成時：** 一起填[決策矩陣](#決策矩陣全部回填後匯整)的初版。
-4. **全部完成後：** Cost Explorer 有延遲，由 A 在資源刪除後隔天統一拉兩人的帳單，回填各 WP，WP6 兩半合成一張表。
+4. **全部完成後：** 由 A 用 WP0 的腳本統一估算兩人的費用，回填各 WP，WP6 兩半合成一張表。
 
 ## 決策矩陣（全部回填後匯整）
 

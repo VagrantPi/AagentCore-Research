@@ -47,7 +47,7 @@ Gateway 降為**選配**：只有在需要 AWS connector（例如 Web Search）�
 0. **盤點自家 MCP server 的現況（先做，決定後面的工作量）：**
    - 目前有沒有驗證使用者身分（OAuth / JWT）？如果沒有，在測試環境先補上最小的 JWT 驗證（例如驗 Cognito 發的 token），這會是本 WP 最大的工作項目。
    - 「使用者買了哪些技能」存在哪裡、server 能不能在每次請求時查到。
-   - 部署一份**測試用的 server 執行個體**，資源加 tag `wp=WP2`，不要直接用正式環境。
+   - 部署一份**測試用的 server 執行個體**，資源加 tag `wp=WP2`、`owner`、`project=hyfai`，不要直接用正式環境。
 1. **兩位測試使用者：** 用 Cognito 發 JWT。使用者 A 只買 `todo`；使用者 B 買了 `todo` 和 `flight`。
 2. **在自家 server 實作技能授權：** `tools/list` 只回傳該使用者買的技能所屬的工具；`tools/call` 再檢查一次。用 A、B 的 token 各自呼叫，記錄回應。
 3. **繞過測試：** 用 A 的 token 直接呼叫 `flight` 技能的工具（假裝知道工具名稱），應該被拒。

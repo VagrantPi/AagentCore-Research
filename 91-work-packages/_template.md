@@ -8,7 +8,7 @@
 - 負責人：
 - 執行日期：
 - 區域：
-- 資源 tag：`wp=WPx`、`owner=<人>`
+- 資源 tag：`wp=WPx`、`owner=<人>`、`project=hyfai`
 - 使用的 AWS 帳號：
 
 ### 結論（三句內）
@@ -28,11 +28,11 @@
 
 ### 實際費用
 
-| 資源 | 用量（時數、次數） | Cost Explorer 金額（USD） | 估算金額（若有） | 差異說明 |
+| 資源 | 用量（vCPU-hours、GB-hours、次數、token） | 用量來源（`USAGE_LOGS`、metric、自己計數） | 單價（官網，標日期） | 估算金額（USD） |
 |---|---|---|---|---|
 
-- Cost Explorer 有約 24 小時延遲，執行隔天再拉一次，以隔天的數字為準。
-- 拉法見 [WP0](WP0-cost-baseline.md)。
+- 本帳號拿不到帳單，全部是估算。算法見 [WP0](WP0-cost-baseline.md)。
+- `CPUUsed-vCPUHours` 這類 metric 最多延遲 60 分鐘，跑完一小時後再算。
 
 ### 否定項目的替代方案
 
@@ -46,7 +46,7 @@
 - [ ] Gateway、Policy 已刪除
 - [ ] Memory 已刪除
 - [ ] VPC endpoint、NAT 已刪除
-- [ ] 隔天確認 Cost Explorer 無持續計費
+- [ ] 隔天確認 Runtime、Browser、Code Interpreter 沒有仍在跑的資源（`list-*` 指令）
 
 ### 要更正研究庫的段落
 

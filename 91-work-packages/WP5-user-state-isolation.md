@@ -6,7 +6,7 @@
 
 ## 目標
 
-用兩個使用者（A、B）實際驗證每一層的隔離，並拿到「一位使用者一個月」的帳單。
+用兩個使用者（A、B）實際驗證每一層的隔離，並估算「一位使用者一個月」的費用。
 
 ## 前提
 
@@ -30,7 +30,7 @@
 6. **Observability：** 開 tracing，看 span 裡有沒有對話內容；設 `AWS_GENAI_CONTENT_EXTRACTION_OPT_OUT` 的兩種值各跑一次，記錄實際行為。
 7. **使用者 token 在 VM 裡被濫用的範圍：** 設計上，使用者的短效 token 會進到 VM，讓 agent 呼叫自家 MCP server（見 [WP2](WP2-capability-boundary.md#設計變更背景)）。在 VM 裡用 A 的 token 呼叫自家 server，嘗試讀 B 的 Todo 資料、呼叫 A 沒買的技能，都應被拒；並確認 token 過期後無法再用。
 8. **Browser profile 由自家 server 管理：** profile 依「使用者 × 網站」建立並加 tag；確認 Runtime 的 execution role 讀不到任何 profile，只有自家 server 的角色讀得到。
-9. **成本情境：** 模擬一位使用者一天：100 個 Memory event、20 次檢索、Runtime 在線 2 小時（idle 30 分鐘）、Browser 10 分鐘。跑 3 天，隔天拉帳單，換算成月費。用 `USAGE_LOGS` 算同一位使用者的 Runtime 用量，和帳單比對。
+9. **成本情境：** 模擬一位使用者一天：100 個 Memory event、20 次檢索、Runtime 在線 2 小時（idle 30 分鐘）、Browser 10 分鐘。跑 3 天，用 WP0 的方法估算費用，換算成月費。Runtime 用量用 `USAGE_LOGS` 依使用者加總，和 `CPUUsed-vCPUHours` metric 比對。
 
 ## 檢核點
 
@@ -40,11 +40,11 @@
 | 2 | Actor 層級的 reflection 沒有混到另一位使用者 | `[推測]` | 是 / 否；貼 reflection 內容 |
 | 3 | 範圍縮小的臨時憑證在 VM 裡讀不到 B 的資料 | `[官方已寫]`（AWS 通用） | 是 / 否 |
 | 4 | VM 自己 AssumeRole 能繞過；trust policy 能擋 | `[推測]` | 是 / 否；附 trust policy |
-| 5 | `USAGE_LOGS` 分攤到使用者的金額，與帳單差多少 | `[官方已寫]` | 百分比 |
+| 5 | `USAGE_LOGS` 能否依使用者分攤；與 metric 加總差多少 | `[官方已寫]` | 百分比 |
 | 6 | Span 裡有沒有對話內容；opt-out 變數的實際行為 | `[矛盾]` | 記錄 |
 | 7 | 刪除一位使用者資料的步驟與耗時；reflection 無殘留 | `[推測]` | 記錄 |
 | 8 | 一位使用者一個月的實際費用（Memory、Runtime、Browser 分開列） | 成本 | USD |
-| 9 | `ListEvents` / `GetMemoryRecord` 這類讀取操作有沒有出現在帳單 | 無數字 | 是 / 否 |
+| 9 | `ListEvents` / `GetMemoryRecord` 這類讀取操作是否計費（拿不到帳單，查官網定價頁；沒寫就填「無法驗證」） | 無數字 | 是 / 否 / 無法驗證 |
 | 10 | VM 裡的 A token 讀不到 B 的資料、呼叫不了 A 沒買的技能；過期後失效 | `[推測]` | 三個是 / 否 |
 | 11 | Runtime 的 execution role 讀不到 Browser profile，只有自家 server 讀得到 | `[推測]` | 是 / 否 |
 
