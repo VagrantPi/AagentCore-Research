@@ -30,6 +30,8 @@
 | VPC 相關 | WP3 建「不開 NAT」的 VPC 與 endpoint |
 | `/wp/` 角色、PassRole、AssumeRole | Runtime 的 execution role；WP5 的測試角色 |
 
+**Browser 權限的歸屬（設計變更後）：** Browser 改由自家 MCP server 呼叫（見 [WP2](../WP2-capability-boundary.md#設計變更背景)）。所以 Runtime 的 **execution role 不給任何 Browser 權限**；Browser 相關權限只給自家 server 使用的角色（server 在 AWS 上就用它的 IAM role，不在 AWS 上用 IAM Roles Anywhere 這類短效憑證）。`wp-boundary.json` 目前允許 `bedrock-agentcore:*`，做 WP2 #6 時要另建一個**不含** Browser 動作的 execution role 來驗證。
+
 **刻意不給的：** Cost Explorer 與 Billing。[WP0](../WP0-cost-baseline.md) 和帳單由帳號負責人處理。
 
 ## 兜底

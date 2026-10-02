@@ -57,8 +57,8 @@
 | 優先序 | 編號 | 題目 | 回答的選型問題 | 風險 | 價值 | 估點 | 前置 | 分群 | 負責人 | 狀態 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 前置 | [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的帳單怎麼拉 | — | 前置 | 2 | — | A | | ⬜ |
-| 1 | [WP2](WP2-capability-boundary.md) | 能力邊界：Harness 覆寫 + Gateway Policy | 「只能用買到的技能」做不做得到、靠哪一層 | 高 | 高 | 5 | WP0 | B | | ⬜ |
-| 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死 | 高 | 高 | 3 | WP0、WP2 的 Gateway | B | | ⬜ |
+| 1 | [WP2](WP2-capability-boundary.md) | 能力邊界：自家 MCP server 依技能授權 | 「只能用買到的技能」能不能由自家 MCP server 強制、agent 繞不過；Browser 包成自家工具可不可行；還要不要 Gateway | 高 | 高 | 8 | WP0、自家 MCP server 測試執行個體 | B | | ⬜ |
+| 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死；不能上網時仍連得到自家 MCP server | 高 | 高 | 5 | WP0、WP2 的自家 MCP server 測試執行個體 | B | | ⬜ |
 | 3 | [WP5](WP5-user-state-isolation.md) | 使用者狀態與隔離、每使用者成本 | 資料不外洩、每人成本算得出來 | 高 | 高 | 5 | WP0、一個最小的 Runtime（WP1 步驟 1） | A | | ⬜ |
 | 4 | [WP1](WP1-runtime-session.md) | Runtime 冷啟動與「一人一實體」 | microVM 撐不撐得住對話體驗？V2 值不值得？ | 中 | 高 | 5 | WP0 | A | | ⬜ |
 | ~~5~~ | ~~[WP4](WP4-browser-takeover.md)~~ | ~~Browser 接手登入~~ | ~~Muse 式的接手流程能不能在 AgentCore 做出來~~ | ~~中~~ | ~~中~~ | ~~8~~ | ~~WP0~~ | — | 其他工程師 | ✅ 已由其他工程師完成 |
@@ -80,8 +80,8 @@
 | 回答的問題 | 資料會不會外洩、「一人一實體」跑不跑得動、每人每月花多少、OpenClaw 的對照數字 | 「只能用買到的技能」守不守得住、~~使用者能不能接手登入~~ |
 | 負責的 WP（依優先序） | WP0（前置）→ WP5 → WP1 → WP6 前半 → WP7 | WP2 → WP3 → ~~WP4~~ → WP6 後半 |
 | WP6 負責的層 | 第 1 層隔離執行環境、第 5 層記憶、第 6 層可觀測與成本 | 第 2 層 agent 框架與技能、第 3 層工具閘道與授權、第 4 層雲端瀏覽器 |
-| 主要碰的 AWS 服務 | Runtime、Memory、STS、CloudWatch、Cost Explorer | Gateway、Policy、Harness、Code Interpreter、VPC |
-| 估點合計 | 2 + 5 + 5 + 5 + 3 = 20 | 5 + 3 + ~~8~~ + 5 = 13 |
+| 主要碰的服務 | Runtime、Memory、STS、CloudWatch、Cost Explorer | 自家 MCP server、Runtime、Harness、Browser（由自家 server 呼叫）、Code Interpreter、VPC；Gateway 與 Policy 只在選配時碰 |
+| 估點合計 | 2 + 5 + 5 + 5 + 3 = 20 | 8 + 5 + ~~8~~ + 5 = 18 |
 
 ### 共用資源：只建一次
 
@@ -89,6 +89,7 @@
 |---|---|---|
 | 成本 tag 規則與拉帳單腳本（WP0） | A，最先做 | 兩人 |
 | 測試身分：使用者 A、B 的 JWT（Cognito） | B，WP2 第一步 | A 在 WP5 用同一組身分測隔離 |
+| 自家 MCP server 的測試執行個體（含 `todo`、包了 Browser 的 `flight` 技能） | B，WP2 步驟 0–2 | B 在 WP3 測連線；A 在 WP5 測使用者 token 被濫用的範圍 |
 | 不開 NAT 的 VPC | B，WP3 | A 在 WP1 的 VPC 組、WP7 的能力邊界測試沿用 |
 | 最小的 Runtime（WP1 步驟 1） | A，WP5 開始前先部署 | WP5 測 VM 內的憑證；之後 WP1 繼續用 |
 | 區域 | 兩人開工前一起選定 | 必須是 V2 有支援的區域（例如 us-west-2 或東京） |
@@ -101,9 +102,9 @@
 
 | WP | 阻斷級（先做） | 其餘（依序） |
 |---|---|---|
-| WP2 | #1 Harness 覆寫、#2 `tools/list` 過濾、#3 陣列型 claim | #4、#5、#6、#7、#9、#8 |
-| WP3 | #1 Sandbox 連外、#3 VPC 無 NAT、#4 憑證可讀性 | #5、#7、#2、#6 |
-| WP5 | #1 actorId 的 IAM、#3 範圍縮小的臨時憑證、#4 VM 自己 AssumeRole 能否繞過、#2 reflection 跨使用者 | #8、#7、#6、#5、#9 |
+| WP2 | #0 自家 server 的身分驗證現況、#1 `tools/list` 過濾、#2 直接呼叫被拒、#3 身分從 Runtime 帶到 server、#6 VM 開不了 Browser、#7 Browser 包成自家工具 | #4、#8、#5、#9、#12、#10、#11；保留 Gateway 時再做 G1–G6 |
+| WP3 | #1 Sandbox 連外、#3 VPC 無 NAT、#8 不能上網仍連得到自家 MCP server、#4 憑證可讀性 | #5、#7、#2、#6 |
+| WP5 | #1 actorId 的 IAM、#3 範圍縮小的臨時憑證、#4 VM 自己 AssumeRole 能否繞過、#10 VM 裡的使用者 token 濫用範圍、#2 reflection 跨使用者 | #11、#8、#7、#6、#5、#9 |
 | WP1 | #8 單 session 並行、#1 V1 冷啟動、#7 預喚醒 | #2、#3、#4、#5、#6a、#6b、#11、#9、#10 |
 | ~~WP4~~ | ~~#1 Live View、#2 接手期間 agent 端行為、#4 交還後繼續、#5b profile 的 IAM 隔離~~ | ~~#5a、#3、#8、#6、#10、#7、#9~~（已由其他工程師完成） |
 | WP6 | 每層「有 / 沒有 / 要自己做」，特別是 #6 框架外強制白名單、#7 接手登入 | #2、#3、#5、#4、#8 |
@@ -116,6 +117,8 @@
 1. **B 完成 WP3 的 #1、A 完成 WP1 的 #8 時：** 立刻互報結果。
    - Sandbox 擋不住外網 → A 的 WP1 要補測 VPC 組。
    - 單一 session 並行會卡住 → B 的技能設計要改成「一個聊天室一個 session」。
+   - B 完成 WP2 的 #0 時，也要立刻告知：自家 MCP server 若目前沒有依使用者驗證身分，補上驗證會是 WP2 最大的工作量，可能影響 WP3、WP5 何時能用到測試執行個體。
+   - B 完成 WP2 的 #4 時：Harness 的 `remote_mcp` 若無法每次帶不同使用者的 token，主 agent 確定只能用 Runtime，A 的 WP1 結論直接適用。
 2. **任何阻斷級檢核點出現「否定」時：** 當下通知對方與你，不要等全部做完。
 3. **兩人的阻斷級檢核點都完成時：** 一起填[決策矩陣](#決策矩陣全部回填後匯整)的初版。
 4. **全部完成後：** Cost Explorer 有延遲，由 A 在資源刪除後隔天統一拉兩人的帳單，回填各 WP，WP6 兩半合成一張表。
@@ -147,9 +150,12 @@
   ▼
 AgentCore Runtime（microVM；每位使用者一個主實體，重任務另開任務實體）
   ├─ 狀態：Memory（對話）／自家 DB（任務進度）／session storage（快取）
-  ├─ 工具：Gateway + Policy（依已購買的能力過濾）
-  ├─ Browser（每位使用者一個；profile 依網站分開；Live View 讓使用者接手登入）
+  ├─ 工具：自家 MCP server（唯一的技能授權點：過濾 tools/list、檢查 tools/call、限流、計量）
+  │    └─ 需要瀏覽器的技能：server 用自己的 AWS 憑證開 Browser（技能專屬的網域白名單）、
+  │       server 端的瀏覽子 agent 操作、Live View URL 由 server 直接推給 App
   └─ Code Interpreter（不能上網的沙箱）
+
+execution role 不給 Browser 權限；Gateway + Policy 為選配，需要時才加在自家 MCP server 前面。
 ```
 
 倚賴的關鍵假設，和對應的 WP：
@@ -158,10 +164,15 @@ AgentCore Runtime（microVM；每位使用者一個主實體，重任務另開�
 |---|---|---|
 | microVM 冷啟動可以用預喚醒藏起來，使用者感受不到 | `[推測]` | WP1 |
 | 同一個 session ID 可以讓一位使用者的多個聊天室共用一台 microVM，並行請求不會卡住 `/ping` | `[推測]` | WP1 |
+| 自家 MCP server 能依使用者身分過濾 `tools/list`、拒絕未購買工具的呼叫 | `[推測]` | WP2 |
+| Runtime 的 agent 能把每位使用者的 token 帶到自家 MCP server；Harness 的 `remote_mcp` 能不能做到未知 | `[推測]` | WP2 |
+| Browser 包成自家 MCP server 的工具後，依技能收費、網域白名單、接手登入都能運作；VM 開不了 Browser | `[推測]` | WP2 |
 | Harness 呼叫時覆寫 `allowedTools` / `skills` 能限制模型看到的工具 | `[官方已寫]`，未實證 | WP2 |
-| Gateway Policy 能依 JWT 內的「已購買能力」陣列過濾 `tools/list` | `[推測]` | WP2 |
+| （選配）Gateway Policy 能依 JWT 內的「已購買能力」陣列過濾 `tools/list` | `[推測]` | WP2 選配 G3 |
 | Code Interpreter 的 Sandbox 模式擋得住任意外網 | `[推測]` | WP3 |
-| Live View + `take_control` 能做出「使用者登入後交還給 agent」 | `[官方已寫]` 機制、`[推測]` 流程 | WP4 |
+| Runtime 的 VM 不能上網時仍連得到自家 MCP server | `[推測]` | WP3 |
+| 使用者 token 進到 VM，被濫用時最多只能做該使用者本來能做的事 | `[推測]` | WP5 |
+| Live View + `take_control` 能做出「使用者登入後交還給 agent」 | `[官方已寫]` 機制、`[推測]` 流程 | WP4（已完成）；改由 server 主導後由 WP2 #8 重新驗證 |
 | Memory `actorId` 加 IAM 能擋住跨使用者讀取；episodic reflection 不會跨使用者 | `[矛盾]` / `[推測]` | WP5 |
 | USAGE_LOGS 可以分攤每位使用者的成本 | `[官方已寫]`，未實證 | WP0、WP5 |
 

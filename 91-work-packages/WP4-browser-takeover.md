@@ -1,5 +1,7 @@
 # ~~WP4 Browser 接手登入~~（已由其他工程師完成）
 
+> **設計變更：** 後來決定 Browser 改由自家 MCP server 呼叫，agent 的 execution role 不再有 Browser 權限（見 [WP2](WP2-capability-boundary.md#設計變更背景)）。如果既有實作是「agent 直接呼叫 Browser」，接手流程的程式要搬到 server 端，並由 server 把 Live View URL 直接推給 App；這部分由 WP2 的 #7、#8 重新驗證。
+>
 > **狀態：✅ 已由其他工程師完成，不列入本次分工。** 請將其結果依[回填模板](_template.md)整理到本檔最下方的「回填」區，特別是檢核點 #9 的 Browser 費用，WP5 計算每位使用者月費時會用到。
 
 > 回答：「agent 操作到登入頁時停下來，使用者在聊天室裡看到瀏覽器畫面、自己登入、交還給 agent 繼續」這條流程，能不能在 AgentCore Browser 上做出來？手機上可不可用？

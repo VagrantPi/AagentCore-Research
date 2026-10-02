@@ -25,7 +25,7 @@
 |---|---|---|---|
 | 1. 隔離執行環境（每人一台） | Runtime microVM | Firecracker 直接用（含 firecracker-containerd）、E2B（可自架）、Daytona、Kata Containers on EKS | 冷啟動秒數（實測一次）；每人每小時成本，**閒置時另列**；VM 回收與記憶體清除由誰負責；8 小時以上的長任務怎麼辦 |
 | 2. Agent 框架與技能 | Harness / Strands、Skills | OpenClaw 自架（Lightsail 或 EC2 一人一台）、Strands、LangGraph、Claude Agent SDK | 技能格式（是否相容 SKILL.md）；工具白名單能否在框架**外**強制；一個程序能否同時服務一位使用者的多個聊天室 |
-| 3. 工具閘道與授權 | Gateway + Policy | 自架 MCP gateway 類專案、Envoy / Kong 加自寫 MCP 轉接、授權用 OPA 或自管 Cedar | 依使用者過濾 `tools/list` 要自己寫多少；temporal 規則（每小時次數）有沒有現成的 |
+| 3. 工具閘道與授權 | Gateway + Policy（設計變更後改由自家 MCP server 負責，見 [WP2](WP2-capability-boundary.md#設計變更背景)） | 自家 MCP server 內嵌授權函式庫：OPA、Cedar（開源）、Casbin；或自架 MCP gateway 類專案 | 在自家 server 裡依使用者過濾 `tools/list`、檢查 `tools/call`、限流與計量，用哪個函式庫最省事；規則能不能做形式驗證 |
 | 4. 雲端瀏覽器與接手 | Browser + Live View | Browserbase、Steel、自架 Chromium 加 noVNC 或 DCV | Live View 與接手是否內建；profile 保存；每小時價格（官網價）；手機瀏覽是否支援 |
 | 5. 記憶 | Memory | 自管 Postgres + pgvector、Mem0、Zep | 跨使用者隔離靠什麼（schema、row-level security、各自的 collection）；萃取策略要不要自己寫 |
 | 6. 可觀測與成本分攤 | Observability + USAGE_LOGS | OpenTelemetry + 任一後端、Langfuse | 每位使用者的成本能不能算出來 |

@@ -28,7 +28,9 @@
 4. **範圍縮小憑證：** 後端用 `AssumeRole` 加 session policy（S3 只允許 `users/A/*`）產生臨時憑證，透過 payload 傳進 Runtime；在 VM 裡用這組憑證讀 `users/B/`，應被拒。再在 VM 裡用 execution role 自己 `AssumeRole`（不帶 session policy）讀 `users/B/`，預期**能讀到**，證明「不能讓 VM 自己 AssumeRole」。記錄要怎麼用 IAM trust policy 擋住後者。
 5. **刪除：** 刪掉 A 的全部資料，記錄 API 順序、呼叫次數、耗時，再確認 reflection 裡沒有 A 的殘留。
 6. **Observability：** 開 tracing，看 span 裡有沒有對話內容；設 `AWS_GENAI_CONTENT_EXTRACTION_OPT_OUT` 的兩種值各跑一次，記錄實際行為。
-7. **成本情境：** 模擬一位使用者一天：100 個 Memory event、20 次檢索、Runtime 在線 2 小時（idle 30 分鐘）、Browser 10 分鐘。跑 3 天，隔天拉帳單，換算成月費。用 `USAGE_LOGS` 算同一位使用者的 Runtime 用量，和帳單比對。
+7. **使用者 token 在 VM 裡被濫用的範圍：** 設計上，使用者的短效 token 會進到 VM，讓 agent 呼叫自家 MCP server（見 [WP2](WP2-capability-boundary.md#設計變更背景)）。在 VM 裡用 A 的 token 呼叫自家 server，嘗試讀 B 的 Todo 資料、呼叫 A 沒買的技能，都應被拒；並確認 token 過期後無法再用。
+8. **Browser profile 由自家 server 管理：** profile 依「使用者 × 網站」建立並加 tag；確認 Runtime 的 execution role 讀不到任何 profile，只有自家 server 的角色讀得到。
+9. **成本情境：** 模擬一位使用者一天：100 個 Memory event、20 次檢索、Runtime 在線 2 小時（idle 30 分鐘）、Browser 10 分鐘。跑 3 天，隔天拉帳單，換算成月費。用 `USAGE_LOGS` 算同一位使用者的 Runtime 用量，和帳單比對。
 
 ## 檢核點
 
@@ -43,6 +45,8 @@
 | 7 | 刪除一位使用者資料的步驟與耗時；reflection 無殘留 | `[推測]` | 記錄 |
 | 8 | 一位使用者一個月的實際費用（Memory、Runtime、Browser 分開列） | 成本 | USD |
 | 9 | `ListEvents` / `GetMemoryRecord` 這類讀取操作有沒有出現在帳單 | 無數字 | 是 / 否 |
+| 10 | VM 裡的 A token 讀不到 B 的資料、呼叫不了 A 沒買的技能；過期後失效 | `[推測]` | 三個是 / 否 |
+| 11 | Runtime 的 execution role 讀不到 Browser profile，只有自家 server 讀得到 | `[推測]` | 是 / 否 |
 
 ## 判定對選型的影響
 
