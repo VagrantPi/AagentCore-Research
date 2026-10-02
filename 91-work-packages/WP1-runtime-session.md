@@ -23,7 +23,7 @@
 
 ## 步驟
 
-1. 用既有的 [`01-runtime/experiments/cold-start/bench.py`](../01-runtime/experiments/cold-start/bench.py)（已本機驗證、**從未在 AWS 跑**）。矩陣縮小成 4 組：V1 container、V2 container，各一組 PUBLIC 和 VPC。每組 20 次試驗。區域選 V2 有支援的（例如東京或 us-west-2）。
+1. 用既有的 [`01-runtime/experiments/cold-start/bench.py`](../01-runtime/experiments/cold-start/bench.py)（已本機驗證、**從未在 AWS 跑**）。矩陣縮小成 4 組：V1 container、V2 container，各一組 PUBLIC 和 VPC。每組 20 次試驗。區域用東京（`ap-northeast-1`）。
 2. 把 agent 的 image 加大到約 1 GB（塞一個無用的大檔案），再跑一次 V1 和 V2，看 image 大小的影響。
 3. 用同一個 session ID 連打 3 次，記錄暖機延遲。
 4. 把 `idleRuntimeSessionTimeout` 設成 60 秒，在 VM 裡寫一個檔案到記憶體和 session storage，等 90 秒再呼叫，檢查哪個還在。

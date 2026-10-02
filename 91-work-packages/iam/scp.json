@@ -6,7 +6,7 @@
       "Effect": "Deny",
       "NotAction": ["iam:*", "sts:*", "organizations:*", "budgets:*", "ce:*", "support:*"],
       "Resource": "*",
-      "Condition": { "StringNotEquals": { "aws:RequestedRegion": "us-west-2" } }
+      "Condition": { "StringNotEquals": { "aws:RequestedRegion": "ap-northeast-1" } }
     },
     {
       "Sid": "NoComputeInstances",

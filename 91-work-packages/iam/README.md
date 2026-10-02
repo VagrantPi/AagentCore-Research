@@ -12,7 +12,7 @@
 
 ## 四層設計
 
-1. **獨立實驗帳號 + SCP**（最重要）：有 AWS Organizations 就另開一個帳號，套上 `scp.json`。區域預設 `us-west-2`，改成你們選好、有支援 Runtime V2 的區域。
+1. **獨立實驗帳號 + SCP**（最重要）：有 AWS Organizations 就另開一個帳號，套上 `scp.json`。區域已定為東京（`ap-northeast-1`）。
    - 沒有 Organizations、只能用現有帳號時，跳過這層，只靠第 3、4 層與預算警報。**同帳號的正式資源只靠名稱與 tag 隔開，風險明顯較高。**
 2. **IAM Identity Center 發短效憑證**：建 permission set（例如 `AgentCoreExperimenter`），session 時長 4 小時、強制 MFA，只指派到實驗帳號。同事用 `aws sso login --profile wp-lab` 登入。
    - 不建 IAM user、不發長期 access key。同事用 AI 輔助開發，憑證不放 `.env` 或 repo，AI 工具才不容易讀到或貼進對話與 log；過期後外流也無效。

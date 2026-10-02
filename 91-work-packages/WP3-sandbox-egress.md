@@ -2,7 +2,10 @@
 
 > 回答：「agent 可以寫程式、跑程式，但不能上網」擋不擋得死？用哪一種網路模式？多出多少建置成本？
 >
-> 估點：5。優先序：2（風險高、價值高）。前置：WP0、WP2 的自家 MCP server 測試執行個體。分群：B。
+> 估點：A 半 2、B 半 3。優先序：2（風險高、價值高）。分群：A、B 各半。
+>
+> - **A 半（Code Interpreter 沙箱）**：檢核點 #1、#2、#4、#7，#6 的沙箱 session 費用。步驟 1、2 的 Sandbox、Public 兩種模式。前置：WP0。不用等 WP2，可以先做。
+> - **B 半（VPC 與連線）**：檢核點 #3、#5、#8，#6 的 endpoint／PrivateLink／Network Firewall 月費。步驟 2 的 VPC 模式、步驟 3–5。前置：WP0、WP2 的自家 MCP server 測試執行個體。
 
 ## 目標
 
