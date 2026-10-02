@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+.omo/
 
 # 獨立的 git repo（Claude skill），與本研究無關
 ELI5/
