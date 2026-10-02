@@ -1,0 +1,24 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OnlyChosenRegion",
+      "Effect": "Deny",
+      "NotAction": ["iam:*", "sts:*", "organizations:*", "budgets:*", "ce:*", "support:*"],
+      "Resource": "*",
+      "Condition": { "StringNotEquals": { "aws:RequestedRegion": "us-west-2" } }
+    },
+    {
+      "Sid": "NoComputeInstances",
+      "Effect": "Deny",
+      "Action": ["ec2:RunInstances", "lightsail:*", "sagemaker:*"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "NoIamUsersOrLongTermKeys",
+      "Effect": "Deny",
+      "Action": ["iam:CreateUser", "iam:CreateAccessKey", "iam:CreateLoginProfile"],
+      "Resource": "*"
+    }
+  ]
+}

@@ -36,6 +36,10 @@
 | 4 | `USAGE_LOGS` 加總的 vCPU-hours × 單價，和 Cost Explorer 的金額差多少 | `[推測]`（研究庫說「不等於帳單」） | 差異百分比 |
 | 5 | 10 分鐘閒置的 Runtime 實際被收了多少錢（驗證「閒置時記憶體照算」） | `[官方已寫]` | 金額 |
 
+## 同事的實驗身分
+
+WP0 由帳號負責人做（Billing、Cost Explorer 不開給同事）。同時要建好給同事用的受限 IAM 身分：SCP、permission set、`wp-boundary`，範本與驗證步驟見 [`iam/`](iam/)。
+
 ## 交付
 
 - `scripts/cost_by_wp.py` 與使用說明。

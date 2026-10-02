@@ -1,0 +1,103 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AgentCoreAll",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "ModelInvoke",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+        "bedrock:Converse", "bedrock:ConverseStream",
+        "bedrock:ApplyGuardrail", "bedrock:CreateGuardrail", "bedrock:GetGuardrail",
+        "bedrock:CreateGuardrailVersion", "bedrock:DeleteGuardrail"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SupportingServicesByPrefix",
+      "Effect": "Allow",
+      "Action": ["lambda:*", "dynamodb:*", "s3:*", "ecr:*", "logs:*"],
+      "Resource": [
+        "arn:aws:lambda:*:*:function:wp-*",
+        "arn:aws:dynamodb:*:*:table/wp-*",
+        "arn:aws:s3:::wp-*", "arn:aws:s3:::wp-*/*",
+        "arn:aws:ecr:*:*:repository/wp-*",
+        "arn:aws:logs:*:*:log-group:/aws/bedrock-agentcore/*",
+        "arn:aws:logs:*:*:log-group:/aws/lambda/wp-*"
+      ]
+    },
+    {
+      "Sid": "UnscopedReadAndAuth",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken", "logs:Describe*", "logs:StartQuery", "logs:GetQueryResults",
+        "xray:Get*", "xray:BatchGet*", "cloudwatch:GetMetric*", "cloudwatch:ListMetrics",
+        "cognito-idp:*", "s3:ListAllMyBuckets", "lambda:List*", "dynamodb:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "NetworkingForWP3",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc", "ec2:CreateSubnet", "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroup*", "ec2:RevokeSecurityGroup*",
+        "ec2:CreateVpcEndpoint", "ec2:CreateRouteTable", "ec2:AssociateRouteTable",
+        "ec2:CreateTags", "ec2:Describe*",
+        "ec2:Delete*", "ec2:ModifyVpcAttribute", "ec2:ModifyVpcEndpoint"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CreateRolesOnlyUnderWpPathWithBoundary",
+      "Effect": "Allow",
+      "Action": ["iam:CreateRole", "iam:PutRolePolicy", "iam:AttachRolePolicy"],
+      "Resource": "arn:aws:iam::*:role/wp/*",
+      "Condition": {
+        "StringEquals": { "iam:PermissionsBoundary": "arn:aws:iam::<ACCOUNT_ID>:policy/wp-boundary" }
+      }
+    },
+    {
+      "Sid": "ManageWpRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole", "iam:ListRolePolicies", "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy", "iam:DetachRolePolicy", "iam:DeleteRole",
+        "iam:TagRole", "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::*:role/wp/*"
+    },
+    {
+      "Sid": "PassWpRolesToServicesOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::*:role/wp/*",
+      "Condition": {
+        "StringEquals": { "iam:PassedToService": ["bedrock-agentcore.amazonaws.com", "lambda.amazonaws.com"] }
+      }
+    },
+    {
+      "Sid": "AssumeWpTestRolesForWP5",
+      "Effect": "Allow",
+      "Action": ["sts:AssumeRole", "sts:TagSession"],
+      "Resource": "arn:aws:iam::*:role/wp/*"
+    },
+    {
+      "Sid": "ProtectBoundary",
+      "Effect": "Deny",
+      "Action": [
+        "iam:DeleteRolePermissionsBoundary", "iam:PutRolePermissionsBoundary",
+        "iam:CreatePolicyVersion", "iam:DeletePolicy", "iam:SetDefaultPolicyVersion"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/wp/*",
+        "arn:aws:iam::<ACCOUNT_ID>:policy/wp-boundary"
+      ]
+    }
+  ]
+}
