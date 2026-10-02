@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Gateway — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .r{text-align:right;white-space:nowrap}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Gateway = <em>agent 流量的單一入口</em></h1>
+    <p class="sub">定位從「把 API 轉成 MCP 工具」擴大成三合一：MCP 聚合器、HTTP 代理、LLM 代理。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="02-memory-eng.html">&larr; 02 Memory</a>
+    <span class="cur">03 Gateway<a href="index.html">目錄</a></span>
+    <a href="04-identity-eng.html">04 Identity &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>三種 target，能力不同</h2>
+    <pre>Agent ──► Gateway ──┬── <b>MCP</b>       /mcp 聚合後端成一個虛擬 MCP server
+   （inbound 驗證）    │        Lambda、API GW stage、OpenAPI、Smithy、
+                       │        遠端 MCP server、內建 connector
+                       ├── <b>HTTP</b>      /&lt;target&gt;/… 直接轉送，不做協定轉換
+                       │        Runtime、A2A、任意 HTTP 端點
+                       └── <b>Inference</b>  依 model 欄位轉送（LLM 代理）</pre>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>HTTP target <b>不支援能力同步與語意搜尋</b>。</span></div>
+      <div class="row"><span class="x">✗</span><span>Runtime target <b>只能加到沒有設定 <code>protocolType</code> 的 gateway</b>。</span></div>
+      <div class="row"><span class="v">✓</span><span>Inference target 可直接用 OpenAI / Anthropic SDK 呼叫，<b>換模型只改 model 字串</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>Inbound 四選一，其中兩種不授權</h2>
+    <table>
+      <tr><td><code>CUSTOM_JWT</code></td><td>驗 JWT；缺 scope 回 403 + <code>WWW-Authenticate</code>，client 可自動探索</td></tr>
+      <tr><td><code>AWS_IAM</code></td><td>驗 SigV4 + 檢查 <code>InvokeGateway</code></td></tr>
+      <tr><td><code>AUTHENTICATE_ONLY</code></td><td><b style="color:var(--warn)">只驗簽章，完全不做授權</b></td></tr>
+      <tr><td><code>NONE</code></td><td><b style="color:var(--warn)">什麼都不檢查</b></td></tr>
+    </table>
+    <div class="alert">
+      <b>選了後兩種，就 Anyone Can Invoke</b>
+      <p>必須另外搭 Policy（Cedar）、interceptor，或由後端自行授權。<code>NONE</code> 可以用 <code>bedrock-agentcore:GatewayAuthorizerType</code> 這個 condition key 在組織層級直接禁掉。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">另外：JWT 的 <code>sub</code> <b>會進 CloudTrail</b> → 別放個資，用 GUID。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>Service role 是所有 target 共用的</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>它的權限就是<b>任何呼叫者透過這個 gateway 能碰到的上限</b>。共用一個 gateway 等於把不同信任等級的後端綁在同一組權限上。</span></div>
+      <div class="row"><span class="v">✓</span><span>官方做法：<b>不同信任等級的 target 拆成不同 gateway</b>，各自 service role。</span></div>
+      <div class="row"><span class="v">✓</span><span>Outbound 用 <b>OAuth On-behalf-of（OBO）</b>：拿使用者 token 換一張範圍更小、audience 只限目標服務的新 token，下游每層都能各自授權。<b>token 直通只給 PoC。</b></span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>四種治理手段怎麼分工</h2>
+    <table>
+      <tr><td>Policy（Cedar）</td><td><b>授權</b>：工具被呼叫前做確定性 allow / deny。宣告式、可稽核 → 這是安全邊界</td></tr>
+      <tr><td>Interceptor（Lambda）</td><td><b>加工</b>：改寫請求／遮罩回應／短路。REQUEST 與 RESPONSE 兩階段</td></tr>
+      <tr><td>Rate limit</td><td><b>防濫用</b>：依 claim、IAM 身分、target、工具分組（最多 10 維）</td></tr>
+      <tr><td>Gateway rules</td><td><b>灰度</b>：依呼叫者或路徑導向 target、切換 bundle、依權重分流</td></tr>
+    </table>
+    <div class="alert" style="border-color:#4a3a20">
+      <b style="color:var(--amber)">Rate limit 預設 fail-open</b>
+      <p style="color:var(--dim)">限流服務不可用或維度解析失敗時<b>請求直接放行</b> → <b>不能當安全機制</b>，只能當成本與防濫用。變更最多 30 秒生效。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">Interceptor 受 Lambda <b>6 MB payload 上限</b>限制，大回應要用 payload filter 排除 body；HTTP target 的 interceptor <b>不支援串流</b>，MCP 串流時則<b>每個事件都會被呼叫一次</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>AWS Agent Registry（組織層級的目錄）</h2>
+    <p class="lead">Gateway 解決「流量怎麼進來」，Registry 解決「<b>組織內到底有哪些東西可以用</b>」。它是官方元件清單裡唯一在這個 repo 沒有獨立資料夾的一員。</p>
+    <table>
+      <tr><td>收錄什麼</td><td>MCP server、agent（依 <b>A2A schema 驗證</b>）、skill，以及自訂類型（API、Lambda、KB、DB 等，搭配自訂的 metadata schema）</td></tr>
+      <tr><td>審核流程</td><td>送審 → EventBridge 通知 → 走你既有的審核流程 → 呼叫 <code>UpdateRegistryRecordStatus</code> 核准或退回。過時的項目可以標成 <code>deprecated</code>，下架後就搜尋不到；開發環境可以設定自動核准</td></tr>
+      <tr><td>搜尋</td><td>語意搜尋和關鍵字搜尋<b>同時</b>進行；每個 registry 都自帶一個 <b>MCP 端點</b>，coding assistant 可以直接連上來搜</td></tr>
+      <tr><td>同步</td><td>從外部 MCP server 的 URL 抓名稱和工具說明，<b>每次同步都會產生一個新版本</b></td></tr>
+      <tr><td>組織整合</td><td>搭配 AWS Organizations，可以<b>自動偵測</b>所有成員帳號的 Runtime 和 Gateway 並建檔；也可以用 RAM 跨帳號分享</td></tr>
+      <tr><td>驗證</td><td>搜尋和 MCP 端點可以用 IAM 或 JWT；<b>控制面永遠用 IAM</b></td></tr>
+      <tr><td>區域</td><td>us-east-1、us-west-2、愛爾蘭、雪梨、<b>東京</b></td></tr>
+    </table>
+    <div class="alert" style="border-color:#4a3a20">
+      <b style="color:var(--amber)">分工：Registry 負責「找」，Gateway 負責「用」</b>
+      <p style="color:var(--dim)">「找」是組織內有哪些工具和 agent 可用、而且已通過審核；「用」才是實際的連線、驗證與治理。⚠️ 預覽版的 <code>bedrock-agentcore</code> namespace 將在 <b>2026-10-30 停止支援</b>，要遷到新的 <code>agent-registry</code>。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">Registry 不會幫你驗證、授權或限流——找到之後要真的接上線，還是得回前面那幾張卡：連線與憑證在「Service role 是共用」、授權在「四種治理手段」、速率上限在「配額與死線」。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>工具多了會變貴又變笨</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>每個工具的名稱、說明、參數 schema <b>每次呼叫模型都要送</b>。兩個內建工具就≈900 token；幾百個工具 = 每次幾萬 token，而且<b>模型會選錯工具</b>。</span></div>
+      <div class="row"><span class="v">✓</span><span>開語意搜尋：agent 多一個 <code>x_amz_bedrock_agentcore_search</code>，先搜再呼叫。</span></div>
+      <div class="row"><span class="x">✗</span><span>但搜尋<b>只支援 MCP target</b>（DYNAMIC 模式不行），且<b>預設每分鐘只有 25 次</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span>target 與工具的三個細節</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>遠端 MCP server 用 <b>DEFAULT 同步模式</b>時，後端工具有變動要<b>自己呼叫 <code>SynchronizeGatewayTargets</code></b>，否則 agent 看到的是舊清單（非同步，大型目錄要幾分鐘）。DYNAMIC 則不能搭語意搜尋與 3LO。</span></div>
+      <div class="row"><span class="x">✗</span><span>工具名稱會被加上 <code>${target}___${tool}</code> 前綴（三個底線），你的 handler 要自己剝掉。</span></div>
+      <div class="row"><span class="x">✗</span><span>MCP <code>2026-07-28</code> 是無狀態的，<code>requestState</code> <b>要你的 server 自己驗證是否屬於同一個使用者</b>，Gateway 不檢查。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>配額與死線</h2>
+    <div class="alert">
+      <b>200 TPS 是整個帳號共用的</b>
+      <p>每個 gateway 200 TPS，<b>整個帳號也是 200 TPS</b>；並發 5,000 同樣共用。<b>拆成多個 gateway 不會增加總額度</b>——最容易被忽略的一條。</p>
+    </div>
+    <div class="alert">
+      <b>2026-10-30 · Registry 預覽版 namespace 停用</b>
+      <p>舊的 <code>bedrock-agentcore</code> namespace 停止支援，需遷移到 <code>agent-registry</code>。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">其餘：每 gateway 100 targets／每 target 1,000 工具、逾時 15 分鐘、payload 6 MB、rate limit 50 條、gateway rules 20 條（依權重分流只能 2 組）。</p>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>三個設計決定</h2>
+    <ol>
+      <li>Inbound 選哪一種？→ <strong>要安全邊界就用 JWT / IAM，不要用需要別人補救的 AUTHENTICATE_ONLY</strong></li>
+      <li>一個 gateway 還是多個？→ <strong>不同信任等級拆開，因為 service role 共用</strong></li>
+      <li>授權靠哪一層？→ <strong>Policy（Cedar）；rate limit 不是安全機制</strong></li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">03-gateway/README.md</code>（查核 2026-09-30）<br>
+    Registry 負責「找」、Gateway 負責「用」
+  </footer>
+
+</div>
+</body>
+</html>

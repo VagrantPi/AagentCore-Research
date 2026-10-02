@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Act 總覽 — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px}
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a8c7fa}
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+  .a{color:var(--amber);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Amazon Nova Act</div>
+    <h1>Nova Act = <em>用自然語言操作網頁</em></h1>
+    <p class="sub">你寫 <code>nova.act("搜尋 rubber duck debugging")</code>，模型就會看著頁面一步步操作，直到完成或放棄。可以和一般 Python、Playwright 混著寫。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="90-integrations-eng.html">&larr; 90 整合</a>
+    <span class="cur">NA 00 總覽<a href="index.html">目錄</a></span>
+    <a href="nova-act-01-sdk-eng.html">NA 01 SDK &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>它是什麼、限制在哪</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span><b>模型不能換。</b>是 AWS 自家訓練的 Nova Act 模型，專為 UI 操作而生（官方宣稱在日期選擇器、下拉選單、彈窗這類難點有 &gt;90% 內部評測分數）。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>只有 Python。</b><code>pip install nova-act</code>，需 Python 3.10+，且<b>不能在 Jupyter / iPython 裡用</b>。支援 macOS、Ubuntu 22.04+、WSL2、Windows 10+。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>只在 us-east-1。</b>官方沒公布其他區域的時程。</span></div>
+      <div class="row"><span class="a">!</span><span><b>兩種身分、兩套條款</b>：API key（nova.amazon.com 免費試玩，<b>截圖等互動資料會被拿去改進服務</b>）與 AWS IAM（正式服務）。<b>正式環境要走 IAM。</b></span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">官方路徑是 Playground 試玩 → 下載成 Python 腳本 → SDK／IDE 擴充開發 → <code>nova-act deploy</code> 自動包容器、建 ECR／S3／IAM role 部署到 AgentCore Runtime → Console 依 run → session → act → step 看紀錄。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>名詞層級（Console 就照這個呈現）</h2>
+    <pre>Workflow definition（在 AWS 上註冊的名字）
+└── Workflow run（一次執行，概念上像 CI 的 pipeline run）
+      └── Session（<b>一個瀏覽器實例，可以多個平行</b>）
+            └── Act（一次 <code>act()</code> 呼叫＝交代模型一件事）
+                  └── Step（截圖觀察 → 決定一個動作 → 執行）</pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>同一個 session 只能單執行緒。</b>要平行就<b>開多個 session</b>，不是在同一個 session 裡加 goroutine。</span></div>
+      <div class="row"><span class="v">✓</span><span>step 預設最多 <b>30 步</b>，硬上限 <b>200 步</b>。HITL 是流程走到需要人核准、或 agent 卡住（例如 CAPTCHA）時轉給真人，處理完再交還。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>誰跑在哪裡 —— 最重要的一點</h2>
+    <p class="lead"><b>瀏覽器不在 Nova Act 服務裡，而是在你的程式那一端。</b>Nova Act 服務本身只做「模型推論＋執行紀錄」兩件事。</p>
+    <pre>你的 workflow 程式（Python + nova-act SDK）
+  │  跑在：本機 / AgentCore Runtime 容器 / 你自己的 ECS、Lambda…
+  ├─ <b>操作瀏覽器</b>（Playwright / CDP）
+  │     瀏覽器：本機 Chromium / 容器內 Chromium / AgentCore Browser（雲端）
+  └─ 每一步把截圖送給 Nova Act 服務 ─→ 模型回傳下一個動作
+        （InvokeActStep，預設 5 TPS／帳號，單次 payload 上限 5 MB）
+        同時把 run / session / act 紀錄寫進服務供 Console 檢視</pre>
+    <p class="lead">推論：<b>運算與瀏覽器的成本落在你選的執行環境上</b> —— 這就是為什麼部署會另外產生 AgentCore Runtime、ECR、S3 的費用。跟 AgentCore 是疊上去，不是替代：Nova Act 管「決定下一步點哪裡」，Browser 給雲端瀏覽器，Runtime 跑你的程式。</p>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>正式環境要固定 model_id</h2>
+    <table>
+      <tr><th>model_id</th><th>行為</th></tr>
+      <tr><td><code>nova-act-latest</code></td><td>自動追最新 GA 版。<b>永遠不會自動跳到 preview</b> → 開發環境用這個</td></tr>
+      <tr><td><code>nova-act-preview</code></td><td>追最新 preview（查核時 v1.1）。SDK 太舊會退回該 SDK 支援的最新 GA 版並跳警告</td></tr>
+      <tr><td><code>nova-act-v1.0</code></td><td>固定在 2025-12-02 的 GA 版，<b>承諾至少支援 1 年</b></td></tr>
+    </table>
+    <div class="note">
+      <b>為什麼正式環境要固定版本號</b>
+      <p>跟鎖相依套件版本一樣道理：<b>模型換版可能改變「同一句 prompt 會點哪裡」</b>，而 UI 自動化對這種行為變化非常敏感。GA 至少支援 1 年，但退場通知機制官方沒說清楚。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>$4.75 / agent hour，而且 step 少就便宜</h2>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span>按「<b>agent 實際在工作的牆鐘時間</b>」計費。平行跑幾個就算幾份；<b>HITL 等真人回應的時間不計</b>。Runtime／Browser／ECR／S3 另外計。</span></div>
+      <div class="row"><span class="a">!</span><span>計費頁<b>沒有列 token 或 step 費用</b> → 推論是模型推論成本已含在 agent hour 裡。所以<b>拆成小而明確的 act（FAQ 也建議這樣加速）同時省錢</b>。</span></div>
+      <div class="row"><span class="a">!</span><span>粗估：一個 5 分鐘流程一天跑 1,000 次 ≈ 83 agent hours ≈ <b>$396／天</b>（還沒算 Runtime 與 Browser）。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>平行擴展會先撞到 5 TPS</h2>
+    <table>
+      <tr><td><code>InvokeActStep</code>（模型推論）</td><td><b>5 TPS／帳號</b> · 可調</td></tr>
+      <tr><td>其他控制面／資料面 API</td><td>100 TPS／帳號 · 可調</td></tr>
+      <tr><td>每 act 步數 / act timeout / run timeout</td><td>200 步 · 24 小時 · 1 週 · <b>都不可調</b></td></tr>
+      <tr><td>每 act 工具數</td><td>100（tool spec 上限 350 KB）· 不可調</td></tr>
+    </table>
+    <div class="alert">
+      <b>要跑一大批 agent 之前，先申請提高配額</b>
+      <p>假設每一步約 2–5 秒（<b>這是假設，官方沒公布</b>），5 TPS 大約只撐得起 <b>10–25 個同時在跑的 session</b>。瓶頸是模型推論，不是你的程式。</p>
+    </div>
+    <div class="alert">
+      <b>官方文件互相矛盾</b>
+      <p>配額表寫 200 步／24 小時／1 週，但 <b>AWS AI Service Card 寫「每個任務最多 100 步、session 最長 30 分鐘」</b>。要當成硬限制用之前，先確認哪一份是你環境實際套用的。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>它碰不到的東西</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span><b>密碼欄位會被模型拒絕。</b>有 guardrail，<b>官方建議改用 Playwright API 直接填</b> → 密碼流程必須自己接。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>瀏覽器本身的彈窗碰不到</b>（例如要求位置權限的 prompt）—— 那是瀏覽器的 UI，不是網頁內容。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>只支援瀏覽器</b>，FAQ 明說不支援一般的 computer use（桌面應用程式）。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>解析度超出 <code>864×1296</code>～<code>1536×2304</code> 準確度可能下降。</b>非典型視窗大小要自己量測。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">適用情境：資料輸入（沒有 API 的 CRM／ERP 表單）、資料擷取、結帳訂位、Web QA 測試（取代維護成本高的 selector 腳本）。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>跟其他方案的差別</h2>
+    <table>
+      <tr><th>方案</th><th>誰決定下一步</th><th>代價</th></tr>
+      <tr><td>Playwright／Selenium 腳本</td><td>你寫死的 selector</td><td>網站改版就壞，維護成本高</td></tr>
+      <tr><td>browser-use ＋ 通用 LLM</td><td>通用模型（可換）</td><td>按 token 計費，<b>截圖很吃 token</b>；準確度看模型</td></tr>
+      <tr><td><b>Nova Act</b></td><td>專為 UI 操作的模型</td><td><b>只有 Python、模型不能換、只在 us-east-1</b></td></tr>
+      <tr><td>AgentCore Browser</td><td>（不決定，只提供瀏覽器）</td><td>需要搭配任一種「大腦」</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">實務組合：<b>Nova Act（大腦）＋ Playwright（密碼、下載等確定性操作）＋ AgentCore Browser（雲端瀏覽器）＋ AgentCore Runtime（跑 workflow）</b>。選框架的成本分界在於「UI 行為變動時要不要維護」—— 網站常改就選 Nova Act，網站穩定就選腳本。</p>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的六個檢查</h2>
+    <ol>
+      <li>目標網站<b>有 API 嗎</b>？有就先別用 UI 自動化</li>
+      <li><code>InvokeActStep</code> 配額<strong>申請提高了嗎</strong>？5 TPS 大約只撐 10–25 個平行 session</li>
+      <li><code>model_id</code> <strong>固定住了嗎</strong>（正式環境不要用 <code>latest</code>）</li>
+      <li>密碼、彈窗、解析度這些<strong>模型碰不到的部分</strong>有 Playwright 接手嗎</li>
+      <li>算過 <strong>agent hour ＋ Runtime／ECR／S3 的合計</strong>嗎（5 分鐘 × 1,000 次／天 ≈ $396）</li>
+      <li><strong>只用 IAM</strong>，不要拿 API key 跑正式資料（互動資料會被收集）</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">nova-act/00-overview/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

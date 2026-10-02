@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Observability — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Observability = <em>唯一能還原「它當時為什麼這樣做」的東西</em></h1>
+    <p class="sub">同樣的輸入，模型每次可能走不同路徑 → 「重現問題」很困難，trace 是事後唯一的依據。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="05-built-in-tools-eng.html">&larr; 05 Tools</a>
+    <span class="cur">06 Observability<a href="index.html">目錄</a></span>
+    <a href="07-evaluations-eng.html">07 Evaluations &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>Agent 的三個「不一樣」</h2>
+    <table>
+      <tr><td>錯誤</td><td>很多是<b style="color:var(--warn)">語意上的</b>：回答錯了、選錯工具、陷入迴圈，但 <b>HTTP 狀態碼是 200</b></td></tr>
+      <tr><td>延遲</td><td>主要來自<b>模型推論</b>，而且跟<b>輸出的 token 數量成正比</b></td></tr>
+      <tr><td>成本</td><td>與 <b>token 用量成正比</b>，同一個請求的差異可能到<b>百倍</b> → 必須逐次追蹤</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">所以 trace 除了時間，還要記下<b>模型輸入輸出、選了哪個工具、工具的參數和結果、token 用量</b>。這也是 07 Evaluations 能自動評分的原始資料 —— <b>沒有 observability 就沒辦法做線上評估</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>三層資料模型與存放位置</h2>
+    <pre>Session（session.id，透過 header 或 OTel baggage 傳遞）
+└── Trace（一次 invoke）
+      └── Span 樹
+            ├── InvokeAgentRuntime      <i>服務自動產生</i>
+            ├── agent loop              <i>框架產生，需要 ADOT</i>
+            │     ├── chat / invoke_model  <i>模型名稱、token 數</i>
+            │     └── execute_tool         <i>工具名稱、參數、結果</i>
+            └── Memory / Gateway / Identity <i>各服務自行產生</i></pre>
+    <p class="lead">全部走 <b>OTel</b> 標準並遵循 <b>GenAI semantic conventions</b>（OTel 為 LLM 定義的屬性名稱）。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span>新 agent 的 span 在 <code>/aws/bedrock-agentcore/runtimes/&lt;agent_id&gt;-&lt;endpoint&gt;</code> 的 <code>spans</code> stream —— <b>每個 agent 各自獨立</b>，所以能針對個別 agent 設存取權限與 KMS 加密。舊 agent 在共用的 <code>aws/spans</code>，可用 <code>UNIFIED_TRACES_DESTINATION_ENABLED</code> 切換。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>Memory、Gateway、內建工具的 log delivery 要自己設定</b>（CloudWatch Logs / S3 / Firehose），<b>預設不會送出</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>兩個開關，沒開就看不到東西</h2>
+    <div class="alert">
+      <b>① 帳號層級：沒開 CloudWatch Transaction Search 就看不到 span</b>
+      <p>一次性設定，但所有 agent 共用 —— 最容易漏掉的一步。</p>
+    </div>
+    <div class="alert">
+      <b>② 程式層級：ADOT 版本要 ≥ 0.18.0</b>
+      <p>Runtime、Memory、Gateway、Identity 的 metric 與服務端 span <b>服務會自動給</b>；但 <b>agent「內部」的 span（呼叫模型、呼叫工具）不在自動範圍內</b>，要靠 <code>aws-opentelemetry-distro&gt;=0.18.0</code> 加上去。</p>
+    </div>
+    <p class="lead" style="margin-top:12px"><b>Harness 是例外</b> —— 預設全開，不需要任何設定。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span><code>APPLICATION_LOGS</code> 會記錄完整 payload</h2>
+    <p class="lead"><code>APPLICATION_LOGS</code> 記錄每次呼叫的 trace / span ID，<b>再加上 <code>request_payload</code> 和 <code>response_payload</code></b>。加上 span 本身也可能含 prompt 與工具輸入輸出 —— 等於<b>把使用者的對話內容全部寫進 CloudWatch</b>。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span>Log group 用 <b>KMS CMK</b> 加密，依法規設保留天數；用 CloudWatch 的<b>資料保護政策</b>遮罩個資（會額外收費）。</span></div>
+      <div class="row"><span class="v">✓</span><span>用「每個 agent 獨立 log group」把存取權限限縮到負責該 agent 的團隊。</span></div>
+      <div class="row"><span class="x">✗</span><span>不想讓 prompt 落地，就<b>不要開 <code>APPLICATION_LOGS</code></b>，或在前端加一道遮罩。</span></div>
+      <div class="row"><span class="v">✓</span><span><code>USAGE_LOGS</code> 記錄每個 session 每秒的用量 → 可以把成本<b>分攤到個別 session 或使用者</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>這個變數的名字和效果相反</h2>
+    <p class="lead"><code>AWS_GENAI_CONTENT_EXTRACTION_OPT_OUT=true</code> —— 名稱看起來像「不要擷取內容」，但官方說法是「讓模型的 payload 和工具的請求與回應<b>保留在 span 上</b>」。</p>
+    <div class="alert">
+      <b>上線前一定要實測</b>
+      <p>確認 span 裡到底有沒有 prompt 內容。<b>不要靠變數名稱假設隱私行為</b> —— 這是名稱與實際效果相反的案例。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>Metric 的兩個陷阱</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span><b><code>CPUUsed-vCPUHours</code> / <code>MemoryUsed-GBHours</code> 最多延遲 60 分鐘，而且不等於實際帳單。</b>可以當趨勢看，不能當對帳依據。</span></div>
+      <div class="row"><span class="v">✓</span><span><code>ActiveSessionCount</code>（<b>目前進行中</b>的 session 數，可依 Runtime / CodeInterpreter / Browser 篩選）→ <b>監控 session 配額用量，建議對它設警報</b>（例如超過配額 80%）。別用 <code>SessionCount</code>，那是累計值。</span></div>
+      <div class="row"><span class="v">✓</span><span>錯誤分類：<code>Throttles</code> 回 429、quota 回 <b>402</b>（不是 429）、<code>UserErrors</code> 裡的 <code>ServiceQuota</code> 是配額告警來源。</span></div>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>CloudWatch 帳單可能超過 Runtime 本身</h2>
+    <p class="lead">span ingestion 約 <b>$0.35 / GB</b>、log 約 <b>$0.50 / GB</b>，另有儲存與查詢費用。而 <b>agent 的 span 很大</b>：含 prompt 與回應，一輪對話就可能數 KB 到數十 KB，工具結果若是長文件更大。</p>
+    <div class="note">
+      <b>控制方式</b>
+      <p>① Transaction Search 的<b>索引抽樣比例</b>（<code>UpdateIndexingRule</code>）② 縮短 log 保留期限 ③ <b>只在需要的環境開啟 payload 記錄</b>。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>接上與接出去</h2>
+    <table>
+      <tr><td>Runtime 上的 agent</td><td><code>aws-opentelemetry-distro&gt;=0.18.0</code>，用 <code>opentelemetry-instrument python main.py</code> 啟動；框架本身要開 OTel（Strands 內建，其他框架用 OpenInference 之類的 instrumentation 套件）</td></tr>
+      <tr><td>AgentCore 之外<br>（EKS / Lambda）</td><td>同一套 ADOT 加環境變數；<b>session ID 要透過 OTel baggage 帶入</b>（<code>session.id</code>）</td></tr>
+      <tr><td>送到其他平台</td><td><code>DISABLE_ADOT_OBSERVABILITY=true</code> 取消預設 ADOT，再自行設 exporter（Datadog、Langfuse 等）</td></tr>
+      <tr><td>跨帳號</td><td>CloudWatch <b>OAM</b> 的 sink 與 link；需分享 <b>Metrics 和 Logs 兩者</b>，且<b>只能在同一個區域內使用</b></td></tr>
+    </table>
+    <div class="note">
+      <b>要把整條 trace 串起來</b>
+      <p>呼叫時帶上 <code>X-Amzn-Trace-Id</code>（X-Ray）或 <code>traceparent</code>（W3C）與 <code>baggage</code> —— <b>內建工具和 Identity 的 API 也接受</b>。另外<b>不支援 ADOT Collector</b>，只能用 ADOT SDK 或 Lambda Layer。</p>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>上線前的四個檢查</h2>
+    <ol>
+      <li>帳號有開 <strong>Transaction Search</strong> 嗎？ADOT 有 <strong>≥ 0.18.0</strong> 嗎？</li>
+      <li>實測 <strong><code>APPLICATION_LOGS</code> 與 span 裡實際記了什麼</strong>，不要相信變數名稱</li>
+      <li>用 <strong><code>ActiveSessionCount</code></strong> 對 session 配額設警報，不要用累計的 <code>SessionCount</code></li>
+      <li>CloudWatch 帳單列為獨立成本項 —— <strong>抽樣 + 保留期限 + 只在必要環境記 payload</strong></li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">06-observability/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

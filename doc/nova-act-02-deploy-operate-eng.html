@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Act 部署與維運 — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px}
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a8c7fa}
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  td.yes{color:var(--ok)}
+  td.no{color:var(--warn)}
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+  .a{color:var(--amber);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Amazon Nova Act</div>
+    <h1>部署 = <em>註冊名字，另外找台機器跑</em></h1>
+    <p class="sub">Nova Act 服務不幫你執行程式。它只認得 workflow definition，程式要自己丟到 AgentCore / Lambda / Fargate / ECS。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="nova-act-01-sdk-eng.html">&larr; NA 01 SDK</a>
+    <span class="cur">NA 02 部署<a href="index.html">目錄</a></span>
+    <a href="nova-act-03-hitl-tools-eng.html">NA 03 HITL &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>「部署」是兩件獨立的事</h2>
+    <div class="stack">
+      <div class="row"><span class="v">1</span><span>在 Nova Act 服務<b>註冊 workflow definition</b>：一個名字，加上選填的 S3 匯出設定。只做一次。</span></div>
+      <div class="row"><span class="v">2</span><span>把 Python 程式<b>放到某個運算平台上跑</b>。Nova Act 服務本身不排程、不跑容器。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">兩者<b>鬆耦合</b>：同一個 definition 可以從本機、Lambda、AgentCore 各自執行，Console 都記在同一個名字底下 —— 拿來比較不同環境的行為很好用。程式端預設跑在 AgentCore Runtime（CLI）或 Lambda / Fargate / ECS（CDK 範例），瀏覽器是容器內的 headless Chromium 或 AgentCore Browser。</p>
+    <p class="lead" style="margin-top:8px">後端類比：definition 像 CI 系統的 pipeline 定義，run 像一次執行。<b>definition 不含程式碼</b>，程式碼在你的容器裡。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>CLI 官方明說：不要拿它上正式環境</h2>
+    <pre>act workflow create --name my-workflow                          <span style="color:var(--dim)"># 註冊 definition</span>
+act workflow deploy --name my-workflow --source-dir ./project   <span style="color:var(--dim)"># 建置並部署</span>
+act workflow run    --name my-workflow --payload '{"input": "data"}'</pre>
+    <div class="alert">
+      <b>原話：「SHOULD NOT be used as a dependency in production code」</b>
+      <p>原因之一是<b>部署狀態只存在你的個人電腦</b>：<code>~/.act_cli/state/{account}/{region}/workflows.json</code>（有檔案鎖），建置產物在 <code>~/.act_cli/builds/{workflow}/</code> 且<b>不會自動清除</b>。換一台機器或換一個人就接不上 —— 跟早期 Terraform 用本機 state 是同一個問題。</p>
+    </div>
+    <table>
+      <tr><th>CLI 自動建立的資源</th><th>名稱</th></tr>
+      <tr><td>ECR repository</td><td><code>nova-act-cli-default</code>（所有 workflow 共用）</td></tr>
+      <tr><td>IAM role</td><td><code>nova-act-{workflow}-role</code>（可用 <code>--execution-role-arn</code> 換自己的）</td></tr>
+      <tr><td>S3 bucket</td><td><code>nova-act-{account}-{region}</code>（也是預設匯出位置）</td></tr>
+    </table>
+    <div class="alert">
+      <b>入口的慣例：預設 <code>main.py</code> 裡必須有 <code>def main(payload):</code></b>
+      <p><code>--entry-point</code> 可換檔案；<code>--skip-entrypoint-validation</code> 會跳過檢查（等於關掉這層保護）。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>用 payload 傳 API key，密鑰會外洩</h2>
+    <div class="alert">
+      <b>payload 裡的 <code>AC_HANDLER_ENV</code> 會在執行前被寫進 <code>os.environ</code></b>
+      <p>官方範例拿它傳 <code>NOVA_ACT_API_KEY</code>。但走這條路，密鑰就會出現在<b>呼叫端的程式碼、shell history 和可能的呼叫紀錄裡</b>。</p>
+    </div>
+    <div class="alert">
+      <b>正式環境改用 IAM 驗證 —— 完全不需要 API key</b>
+      <p>其他密鑰（網站帳密、第三方 token）請用 Secrets Manager 或 AgentCore Identity，不要塞進 payload。</p>
+    </div>
+    <div class="alert">
+      <b>區域：Runtime 可以部署在別的區，Nova Act 服務只有 us-east-1</b>
+      <p><code>--region</code> 決定 Runtime 在哪，但<b>每一步模型推論都會跨區呼叫 us-east-1</b>。這會同時增加延遲與跨區流量成本。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>四種運算平台：真正的天花板是平台，不是 Nova Act</h2>
+    <table>
+      <tr><th>平台</th><th>適合</th><th>架構重點</th><th>限制</th></tr>
+      <tr><td>Lambda</td><td>事件驅動、短流程</td><td>容器映像檔預裝 Playwright</td><td class="no">最長 15 分鐘</td></tr>
+      <tr><td>Fargate</td><td>一般長流程</td><td>私有子網路 + VPC endpoint + NAT</td><td>要自己管 VPC</td></tr>
+      <tr><td>ECS（EC2）</td><td>大量、需控制主機</td><td>自動擴展、加密的 EBS</td><td>容量自己管</td></tr>
+      <tr><td>AgentCore</td><td>要接其他 AgentCore 元件</td><td>ARM64 容器、內建 OpenTelemetry</td><td>見 04</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span>選擇關鍵只有兩題：<b>流程跑多久</b>、<b>要不要接 AgentCore 的其他元件</b>。5 分鐘內事件觸發 → Lambda；要自己控制網路 → Fargate；要接 Identity / Browser / Observability → AgentCore。</span></div>
+      <div class="row"><span class="a">!</span><span><b>時長上限的實際排序：</b>Lambda 15 分鐘 &lt; AgentCore microVM 8 小時 &lt; AgentCore Instances 14 天。而 Nova Act 的 act timeout 是 24 小時、workflow run 最長 1 週 —— <b>所以流程能跑多久，通常卡在運算平台</b>。</span></div>
+      <div class="row"><span class="a">!</span><span>CDK 範例的瀏覽器參數全部相同：<code>--disable-gpu --disable-dev-shm-usage --no-sandbox --single-process</code>，一律 headless。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>exportConfig：軌跡只暫存，要自己寫進 S3</h2>
+    <pre>aws nova-act create-workflow-definition \
+  --name my-workflow \
+  --export-config '{"s3BucketName": "my-bucket", "s3KeyPrefix": "nova-act-workflows"}' \
+  --region us-east-1</pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span>服務只<b>暫存</b> agent trajectory（prompt、截圖、模型回應）。要長期保存才設 <code>exportConfig</code>，把這些寫到自己的 S3。</span></div>
+      <div class="row"><span class="a">!</span><span><b>bucket 必須和呼叫端在同一個帳號</b>，不支援跨帳號。呼叫端需要 <code>s3:PutObject</code> on <code>arn:aws:s3:::{bucket}/{prefix}/*</code>。</span></div>
+      <div class="row"><span class="a">!</span><span>官方<b>強烈建議加密這個 bucket</b>，因為<b>截圖裡可能有個資</b>。</span></div>
+      <div class="row"><span class="v">✓</span><span>也能用 Console、boto3 或 <code>act workflow create</code> 建立。<b>只需要建立一次</b> —— 官方特別提醒不要在執行時建立 definition。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>CloudWatch 沒有「任務成功率」</h2>
+    <p class="lead">namespace <code>AWS/NovaAct</code> 只有 5 個 API 層級指標：</p>
+    <table>
+      <tr><th>指標</th><th>單位</th><th>說明</th></tr>
+      <tr><td><code>Invocations</code></td><td>Count</td><td>API 請求數</td></tr>
+      <tr><td><code>Latency</code></td><td>ms</td><td>端到端延遲，可查 p50 / p90 / p99</td></tr>
+      <tr><td><code>UserErrors</code></td><td>Count</td><td>參數錯誤、ID 錯誤、IAM 權限不足</td></tr>
+      <tr><td><code>SystemErrors</code></td><td>Count</td><td>服務內部錯誤、相依服務失敗、逾時</td></tr>
+      <tr><td><code>Throttles</code></td><td>Count</td><td>被限流或超過配額</td></tr>
+    </table>
+    <div class="alert">
+      <b>act 失敗在服務看來，可能只是一次正常的 API 呼叫</b>
+      <p>例如 <code>ActAgentFailed</code> —— API 層回應成功，但任務失敗。<b>業務層級的成功率沒有內建指標</b>，要自己從程式裡發自訂指標，或從 run 狀態統計。</p>
+    </div>
+    <div class="alert">
+      <b>維度只有 <code>Workflow</code> 和 <code>ApiName</code> 兩個</b>
+      <p>官方建議的告警：SystemErrors 超門檻、Latency p90/p99 上升、<b>Throttles 只要出現就代表該申請提高配額</b>。看不到 session / act 層級的分解。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>CloudTrail：資料面要自己開，而且有兩個 API 不在清單上</h2>
+    <table>
+      <tr><th>類型</th><th>預設</th><th>包含的 API</th></tr>
+      <tr><td>管理事件（控制面）</td><td class="yes">有記錄</td><td><code>CreateWorkflowDefinition</code>、<code>Get/List/DeleteWorkflowDefinition</code>、<code>GetWorkflowRun</code>、<code>ListWorkflowRuns</code>、<code>ListSessions</code>、<code>ListActs</code>、<code>ListModels</code></td></tr>
+      <tr><td>資料事件（資料面）</td><td class="no">要自己開</td><td><code>CreateSession</code>、<code>CreateAct</code>、<code>UpdateAct</code>、<code>InvokeActStep</code>（需 advanced event selectors）</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="a">!</span><span>event source 是 <code>nova-act.amazonaws.com</code>。資料事件可用 ARN 過濾：<code>arn:aws:nova-act:{region}:{account}:workflow-definition/{name}</code>，或再加 <code>/workflow-run/{runId}</code>。</span></div>
+      <div class="row"><span class="a">!</span><span>資料面的請求<b>可能含有個資，所以部分欄位被遮蔽</b> —— 稽核時看不到完整 payload。</span></div>
+    </div>
+    <div class="alert">
+      <b>怪地方：想稽核「誰觸發了哪次 run」，清單上找不到那兩個 API</b>
+      <p><code>CreateWorkflowRun</code> 和 <code>UpdateWorkflowRun</code> 出現在<b>配額表的資料面 API</b>裡，但 CloudTrail 的兩張清單<b>都沒有列出</b>。要仰賴這個做稽核之前必須實測確認。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>文件矛盾與維運三瓶頸</h2>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>CDK README 自打架。</b>「Prerequisites」要求準備 Nova Act API key（還要 <code>export NOVA_ACT_API_KEY</code>），但同一份文件的「Authentication」又說「All examples use IAM Role authentication — no API keys required」。從架構看應該走 IAM，<b>API key 那段像是舊版殘留</b>，需實測確認。</span></div>
+      <div class="row"><span class="a">!</span><span><b>沒有官方排程功能。</b>批次（例如每天 1,000 筆）要自己設計扇出：用佇列控制併發，把 <code>InvokeActStep</code> 總速率壓在配額內。觸發方式取決於平台：CLI、<code>InvokeAgentRuntime</code>、EventBridge Scheduler、SQS、API Gateway。</span></div>
+      <div class="row"><span class="a">!</span><span><b>維運最常碰到的三個上限：</b>① <code>InvokeActStep</code> 5 TPS（平行度天花板，看 <code>Throttles</code>）；② 每個 act 最多 200 步（<code>max_steps</code> 再大也超不過）；③ 運算平台自己的時長上限。</span></div>
+      <div class="row"><span class="v">✓</span><span>Console 的 run 詳情會顯示<b>使用的 model ID</b> —— 這是追查「模型升版後行為改變」的關鍵，搭配 00 的版本固定策略一起用。</span></div>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>上正式環境前的六個檢查</h2>
+    <ol>
+      <li><strong>正式環境有沒有用 CLI</strong> —— 換機器就斷的 state 只能拿來做原型</li>
+      <li><strong>驗證走 IAM 還是 payload 傳 API key</strong> —— 密鑰不該出現在 shell history</li>
+      <li><strong>exportConfig 的 S3 有沒有加密、跟呼叫端同帳號</strong> —— 截圖裡可能有個資</li>
+      <li><strong>CloudTrail 資料事件開了嗎</strong> —— 沒開就稽核不到 <code>InvokeActStep</code></li>
+      <li><strong>任務成功率指標在哪</strong> —— 內建沒有，得自己發</li>
+      <li><strong>流程時長會撞到哪個上限</strong> —— 多半是平台的 15 分鐘，不是 Nova Act 的 24 小時</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">nova-act/02-deploy-operate/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

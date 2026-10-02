@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>索引 — AgentCore + Nova Act ELI5</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* index list: link rows instead of tables for scannability */
+  .toc{display:grid;gap:6px}
+  .toc a{
+    display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:baseline;
+    background:#0d1420;border:1px solid var(--line);border-radius:9px;
+    padding:11px 14px;color:var(--ink);text-decoration:none;
+  }
+  .toc a:hover{border-color:var(--accent);text-decoration:none;background:#111a29}
+  .toc .id{color:var(--accent);font-weight:700;font-size:13px}
+  .toc .d{color:var(--dim);font-size:13px}
+  .toc .d b{color:var(--ink);font-weight:600}
+  .toc .src{display:block;color:#5d6a85;font-size:11.5px;margin-top:2px}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · 17 篇</div>
+    <h1>索引 = <em>先選元件，再看 ELI5</em></h1>
+    <p class="sub">這裡是 HTML 版的研究筆記入口。每一篇都是 9 張卡片的白話摘要；完整細節在對應的 Markdown 主檔。</p>
+  </header>
+
+  <div class="card">
+    <h2><span class="num">1</span>怎麼用這份文件</h2>
+    <div class="stack">
+      <div class="row"><span class="v">1</span><span><b>兩層設計</b>：HTML 這層是 ELI5，用資深後端工程師的概念去解釋 AI agent 的架構與取捨；Markdown 那層是研究主檔，完整的 API、數字、參考資料都在那裡。</span></div>
+      <div class="row"><span class="v">2</span><span><b>每頁 footer 都指回 Markdown 主檔</b> —— 遇到「這個數字哪來的」「這個限制為什麼」就去主檔查。</span></div>
+      <div class="row"><span class="v">3</span><span><b>兩組分開</b>：下面 11 篇是 AgentCore（AWS 的 agent 基礎設施），6 篇是 Nova Act（瀏覽器 UI 自動化 agent）。Nova Act 是<b>疊在</b> AgentCore 上面，不是取代。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">完全沒有頭緒的話，<a href="00-overview-eng.html">先讀總覽</a>。資料查核日期 <b>2026-09-30</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>AgentCore 元件（11 篇）</h2>
+    <div class="toc">
+      <a href="00-overview-eng.html"><span class="id">00</span><span class="d"><b>總覽</b> — 整體架構、12 個元件、計費、區域與配額、跟 Bedrock Agents Classic 的差別<span class="src">Markdown：00-overview/README.md（另有 harness-vs-runtime.md、build-vs-buy.md）</span></span></a>
+      <a href="01-runtime-eng.html"><span class="id">01</span><span class="d"><b>Runtime</b> — Serverless 的 agent / tool 執行環境，session 生命週期與 microVM<span class="src">Markdown：01-runtime/README.md</span></span></a>
+      <a href="02-memory-eng.html"><span class="id">02</span><span class="d"><b>Memory</b> — 代管的短期（對話歷史）與長期（萃取後知識）記憶<span class="src">Markdown：02-memory/README.md</span></span></a>
+      <a href="03-gateway-eng.html"><span class="id">03</span><span class="d"><b>Gateway</b> — agent 流量的統一入口：MCP 工具、HTTP 代理、LLM 代理（含 Registry）<span class="src">Markdown：03-gateway/README.md</span></span></a>
+      <a href="04-identity-eng.html"><span class="id">04</span><span class="d"><b>Identity</b> — agent 的身分與憑證管理：inbound 驗證、outbound OAuth token / API key<span class="src">Markdown：04-identity/README.md</span></span></a>
+      <a href="05-built-in-tools-eng.html"><span class="id">05</span><span class="d"><b>Built-in Tools</b> — Code Interpreter、Browser、Web Search 三個代管沙箱<span class="src">Markdown：05-built-in-tools/README.md</span></span></a>
+      <a href="06-observability-eng.html"><span class="id">06</span><span class="d"><b>Observability</b> — OTel 追蹤與監控，agent 每一步的 span 設計<span class="src">Markdown：06-observability/README.md</span></span></a>
+      <a href="07-evaluations-eng.html"><span class="id">07</span><span class="d"><b>Evaluations</b> — agent 品質評估與 Optimization（建議 ＋ A/B test）<span class="src">Markdown：07-evaluations/README.md</span></span></a>
+      <a href="08-policy-eng.html"><span class="id">08</span><span class="d"><b>Policy</b> — 用 Cedar / Dogwood 做工具呼叫的確定性授權（含 temporal、Guardrails）<span class="src">Markdown：08-policy/README.md</span></span></a>
+      <a href="09-payments-eng.html"><span class="id">09</span><span class="d"><b>Payments</b> — agent 自動付費（x402 / MPP）與預算控管<span class="src">Markdown：09-payments/README.md</span></span></a>
+      <a href="90-integrations-eng.html"><span class="id">90</span><span class="d"><b>框架整合</b> — 框架 × 元件對照：Strands、LangGraph、Claude Agent SDK 等<span class="src">Markdown：90-integrations/README.md</span></span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>Nova Act（6 篇）</h2>
+    <p class="lead" style="margin-bottom:12px">AWS 的瀏覽器 UI 自動化 agent 服務：用自然語言 ＋ Python 寫 workflow，由專門訓練的模型操作網頁。</p>
+    <div class="toc">
+      <a href="nova-act-00-overview-eng.html"><span class="id">00</span><span class="d"><b>總覽</b> — 定位、名詞、模型版本、計費（$4.75 / agent hour）、跟其他瀏覽器自動化方案的比較<span class="src">Markdown：nova-act/00-overview/README.md</span></span></a>
+      <a href="nova-act-01-sdk-eng.html"><span class="id">01</span><span class="d"><b>SDK</b> — <code>act()</code> / <code>act_get()</code>、prompt 寫法、錯誤處理、平行執行、保存登入狀態<span class="src">Markdown：nova-act/01-sdk/README.md</span></span></a>
+      <a href="nova-act-02-deploy-operate-eng.html"><span class="id">02</span><span class="d"><b>部署與維運</b> — CLI / CDK 部署、Console、CloudWatch、CloudTrail<span class="src">Markdown：nova-act/02-deploy-operate/README.md</span></span></a>
+      <a href="nova-act-03-hitl-tools-eng.html"><span class="id">03</span><span class="d"><b>HITL 與工具</b> — 真人核准與接手、MCP 工具、當 Strands 的工具<span class="src">Markdown：nova-act/03-hitl-tools/README.md</span></span></a>
+      <a href="nova-act-04-agentcore-eng.html"><span class="id">04</span><span class="d"><b>跟 AgentCore 整合</b> — Runtime、Browser、Identity、Observability、Gateway 的接法與成本<span class="src">Markdown：nova-act/04-agentcore/README.md</span></span></a>
+      <a href="nova-act-05-security-eng.html"><span class="id">05</span><span class="d"><b>安全</b> — prompt injection、IAM 最小權限、資料保護、文件矛盾<span class="src">Markdown：nova-act/05-security/README.md</span></span></a>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>兩個已知的覆蓋缺口</h2>
+    <div class="note">
+      <b>① 官方 12 個元件裡有 3 個沒有獨立篇章</b>
+      <p><b>Harness</b>（併入 00 總覽的延伸）、<b>Optimization</b>（併入 07）、<b>Registry</b>（併入 03）。HTML 這層也一樣沒有獨立頁。</p>
+    </div>
+    <div class="note">
+      <b>② Markdown 有、HTML 還沒寫的延伸筆記</b>
+      <p><code>00-overview/harness-vs-runtime.md</code>（Harness 與 Runtime 的能力邊界、逃生口、踩雷清單、export 路徑）與 <code>00-overview/build-vs-buy.md</code>（各元件自建難度、綁定程度、混合策略）。這兩份目前只有 Markdown 版。</p>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>推薦閱讀順序</h2>
+    <ol>
+      <li><strong>完全沒接觸過</strong> → <a href="00-overview-eng.html">00 總覽</a>，特別是「為什麼不能直接丟 Lambda」跟「Harness vs Runtime」兩張卡</li>
+      <li><strong>要選框架</strong> → <a href="90-integrations-eng.html">90 框架整合</a>，那張「通用 vs 框架專屬」對照表</li>
+      <li><strong>要做 production 上線</strong> → <a href="08-policy-eng.html">08 Policy</a> ＋ <a href="04-identity-eng.html">04 Identity</a>，再回頭看 00 的配額與區域限制</li>
+      <li><strong>要量測品質</strong> → <a href="06-observability-eng.html">06 Observability</a> → <a href="07-evaluations-eng.html">07 Evaluations</a>，這兩篇是前後關係</li>
+      <li><strong>要做瀏覽器自動化</strong> → Nova Act <a href="nova-act-00-overview-eng.html">00</a> → <a href="nova-act-04-agentcore-eng.html">04 跟 AgentCore 整合</a>，確認要怎麼接到既有元件上</li>
+    </ol>
+  </div>
+
+  <footer>
+    原始筆記：<code class="path">README.md</code>（Markdown 索引）· 資料查核 2026-09-30 · 每篇 HTML 9 張卡片
+  </footer>
+
+</div>
+</body>
+</html>

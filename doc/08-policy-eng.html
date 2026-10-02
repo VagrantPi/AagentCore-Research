@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Policy — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Policy = <em>模型之外的安全控制</em></h1>
+    <p class="sub">在 system prompt 裡寫「退款不能超過 $500」不是安全控制 —— 模型可能不遵守，也可能被 prompt injection 騙過。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="07-evaluations-eng.html">&larr; 07 Evaluations</a>
+    <span class="cur">08 Policy<a href="index.html">目錄</a></span>
+    <a href="09-payments-eng.html">09 Payments &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>為什麼不能只靠 prompt</h2>
+    <table>
+      <tr><td>寫在 system prompt</td><td>模型是機率性的，<b>不保證遵守</b>；惡意輸入可以誘導它違反</td></tr>
+      <tr><td>寫在工具後端</td><td>可行，但規則散落在各服務、<b>難以一致與稽核</b>；後端也不一定知道是哪個使用者透過哪個 agent 呼叫</td></tr>
+      <tr><td><b>在 Gateway 上用 Policy</b></td><td>所有工具呼叫經過同一檢查點；規則宣告式、可驗證、可版本控管，<b>跟模型行為完全無關</b></td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">類比：<b>IAM policy 之於 AWS API，就是 AgentCore Policy 之於 agent 的工具呼叫</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>一次授權請求的四個要素</h2>
+    <pre>principal = AgentCore::OAuthUser::"1234…"   <i>（JWT 的 claim 會成為 tag）</i>
+action    = AgentCore::Action::"RefundTool___process_refund"
+resource  = AgentCore::Gateway::"arn:…:gateway/refund-gateway"
+context   = { input: { amount: 450, orderId: "12345" } }
+        │
+        ▼  <b>預設拒絕、forbid 優先於 permit</b>
+ALLOW → 呼叫後端／ DENY → isError: true + AuthorizeActionException</pre>
+    <p class="lead"><code>context</code> 就是<b>工具的參數</b>，所以規則才能寫成 <code>context.input.amount &lt; 500</code>。JWT claim 會變成 <code>principal.getTag("role")</code>，可用 <code>cognito:groups</code> 這類 claim 做授權。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>schema 自動產生 + tools/list 也會被過濾</h2>
+    <div class="stack">
+      <div class="row"><span class="v">✓</span><span><b>Cedar schema 從 gateway 的工具定義自動產生</b> → 建立 policy 時就驗證，引用不存在的工具或欄位<b>直接擋下</b>。另有<b>自動推理</b>標出「永遠允許」或「永遠拒絕」的 policy。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>tools/list 看得到，不代表呼叫一定會成功。</b>列出工具是一種 meta action，只要<b>任何情況下有可能</b>被允許就會出現；實際呼叫會依參數再判斷一次。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>Policy 只作用在 MCP 的 tools</b>，prompts 與 resources 永遠放行。</span></div>
+      <div class="row"><span class="v">✓</span><span>好處：agent 看不到完全不能用的工具，<b>省 token 也少了被誘導嘗試的機會</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>Temporal（Dogwood）：有狀態的規則</h2>
+    <p class="lead">Cedar 只看當下這次請求，但 agent 的安全規則常跟「<b>之前做過什麼</b>」有關：退款前必須先驗證身分、賣股票前一小時內要有核准紀錄、同一 session 轉帳總額不超過 $10,000。</p>
+    <pre>Dogwood 相容 Cedar，加上 temporal 運算子：
+  <b>formerly within</b>  時間窗內曾經發生過
+  <b>since within</b>   某事件之後一直成立
+  <b>count</b> / <b>sum</b>  次數與總額</pre>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span><b>被拒絕的動作不算「做過」</b> → 只比對 <code>response</code> 的條件永遠不會匹配到它。</span></div>
+      <div class="row"><span class="x">✗</span><span>配額：每 engine 最多 <b>20 個</b> temporal policy、每 policy 最多 <b>3 個</b> temporal 運算子、時間窗最長 <b>24 小時</b>；必須<b>同帳號同區域</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>Temporal 的三個硬限制</h2>
+    <div class="alert">
+      <b>Session ID 由呼叫端自己提供，Gateway 不會代為產生</b>
+      <p>所以「每個 session 最多 N 次」<b>換一個 session ID 就重新計算</b> —— <b>不能當作跨 session 的限流</b>。要擋就搭配 Gateway 的 rate limit 或後端額度。（不同呼叫者即使撞同一個 ID 也不會共用歷史，因為 key 包含呼叫者身分。）</p>
+    </div>
+    <div class="alert">
+      <b>修改 temporal policy 會讓進行中的 session 收到 409</b>
+      <p>新增或修改 temporal policy 後，進行中的 session 要開新的才能繼續。</p>
+    </div>
+    <div class="alert">
+      <b>engine 裡有 temporal policy 時，沒帶 session header 的請求會直接失敗</b>
+      <p>header 是 <code>x-amzn-bedrock-agentcore-policy-session-id</code>，要從 Runtime 端一路傳下來。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>Guardrails in policy：確定性政策 + 不確定分數</h2>
+    <p class="lead"><b>Policy 本身是確定性的，但 guardrail 的分數不是</b> —— 同樣的輸入，分數可能不同。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">✗</span><span>分數目前只有 <b>0 / 0.2 / 0.4 / 0.6 / 0.8 / 1.0</b> 幾種離散值 → 門檻只能落在這些值上，沒得微調。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>亞太只有東京和雪梨支援</b>Guardrails in policy。</span></div>
+      <div class="row"><span class="v">✓</span><span>校準方式：先用 <code>LOG_ONLY</code> 收集分數 + 人工標註，畫混淆矩陣，再依誤擋／漏擋的容忍度選門檻。</span></div>
+      <div class="row"><span class="v">✓</span><span><code>suppressOutput</code>：工具<b>輸出</b>違規時<b>整個拿掉</b>（不是只遮掉部分內容）。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>整套機制最弱的一環</h2>
+    <div class="alert">
+      <b>有 UpdateGateway 權限的人，就能把模式切回 LOG_ONLY，甚至直接拔掉整個 policy engine</b>
+      <p><b>沒有其他 condition key 可以另外保護。</b>每條 policy 也有自己的 <code>enforcementMode</code>，所以 <b>UpdatePolicy 權限同樣能讓單條 policy 失效</b>。整套 Policy 的強度上限，等於你發放這兩個 IAM 權限的嚴格程度 —— 對<code>policyEngineConfiguration</code> 的變更要設 CloudTrail 警報。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>限制與配額</h2>
+    <table>
+      <tr><td>Cedar 語言</td><td><b>沒有浮點數</b>（decimal 最多 4 位小數）；<b>沒有 regex</b>，只有 <code>like</code> 搭配 <code>*</code></td></tr>
+      <tr><td>單一 policy / 每 resource 總大小</td><td>10 KB / 200 KB</td></tr>
+      <tr><td><b>Cedar schema 大小</b></td><td><b>400 KB</b> —— 這個 engine 關聯的<b>所有 gateway 的所有工具加總</b>；工具一多或參數結構複雜就要<b>拆成多個 engine</b></td></tr>
+      <tr><td>同一次呼叫</td><td><b>不能同時引用</b> <code>context.input</code> 和 <code>context.output</code></td></tr>
+      <tr><td>控制面 API 速率</td><td><b>很低且不可調整</b>：<code>CreatePolicyEngine</code> 1 TPS、<code>CreatePolicy</code> 5 TPS</td></tr>
+      <tr><td>計費</td><td>每次授權檢查 $0.000025（每百萬次 $25）；NL2Cedar 每千 token $0.13</td></tr>
+    </table>
+    <div class="note">
+      <b>NL2Cedar 要人工審查</b>
+      <p>自然語言有歧義 —— 官方列的常見錯誤就是條件寫太模糊、<code>and</code> 與 <code>or</code> 優先順序沒講清楚。產出的 policy 必須人工審查並放進版本控管。推論會留在同一地理區內（APAC 的請求留在 APAC）。</p>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的六個檢查</h2>
+    <ol>
+      <li>要擋的規則<strong>真的在 prompt 裡嗎</strong>？那些才是要搬成 Cedar 的候選</li>
+      <li><code>UpdateGateway</code> 與 <code>UpdatePolicy</code> 發給了誰？CloudTrail 警報設了嗎</li>
+      <li>temporal 的 session ID <strong>綁在 Runtime 的 session 上</strong>了嗎？還是讓呼叫端自己生成</li>
+      <li>要擋跨 session 的累積限制，<strong>有搭配 Gateway rate limit 或後端額度</strong>嗎</li>
+      <li>guardrail 門檻<strong>用 LOG_ONLY 校準過</strong>嗎？部署區域支援嗎</li>
+      <li>工具總量會讓 <strong>Cedar schema 超過 400 KB</strong> 嗎？要不要先拆 engine</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">08-policy/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

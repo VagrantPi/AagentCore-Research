@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Runtime — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .r{text-align:right;white-space:nowrap}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Runtime = <em>Lambda 的 function→version→alias，再多一層有狀態的 session</em></h1>
+    <p class="sub">每個 session = 一台專屬 microVM。開發者的 surface 只有兩個 endpoint。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="00-overview-eng.html">&larr; 00 總覽</a>
+    <span class="cur">01 Runtime<a href="index.html">目錄</a></span>
+    <a href="02-memory-eng.html">02 Memory &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>資源模型</h2>
+    <pre><b>Runtime</b>          一個 agent / tool，有自己的 execution role
+├── <b>Version</b>        <i>不可變</i> · 最多 1,000 · 改 image/協定/網路都出新版本
+├── <b>Endpoint</b>       最多 10 · DEFAULT 自動指最新 · prod/staging 手動釘版本
+└── <b>Session</b>       runtimeSessionId（≥33 字元）→ 一台 microVM</pre>
+    <p class="lead">你要寫的只有 <code>0.0.0.0:8080</code> 上的 <code>POST /invocations</code> + <code>GET /ping</code>，ARM64 container。換協定只是換 port 和路徑（MCP 8000 <code>/mcp</code>、A2A 9000 <code>/</code>、AG-UI 8080 SSE）。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>閒置 15 分鐘、上限 8 小時 — 消失的是 VM 不是 session</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>session ID <b>永不失效</b>。VM 被回收後，同一個 ID 再呼叫 → <b>全新空 VM</b>，記憶體狀態沒了。</span></div>
+      <div class="row"><span class="x">✗</span><span>沒帶 session header（<code>X-Amzn-Bedrock-AgentCore-Runtime-Session-Id</code>）→ 每個請求都可能落到新 VM，<b>每次都冷啟動</b>。</span></div>
+      <div class="row"><span class="v">✓</span><span>閒置計時器每次呼叫重設；<code>maxLifetime</code> 從 VM 建立起算，<b>不重設</b>。閒置越短越省（記憶體閒置仍計費）但冷啟動越頻繁。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span><code style="font-size:15px">/ping</code> 決定 session 生死 — 兩個相反的坑</h2>
+    <div class="alert">
+      <b>阻塞 handler 會把 <code>/ping</code> 一起卡住</b>
+      <p>單執行緒程式中只要有阻塞操作，<code>/ping</code> 就回不了 → 15 分鐘後 session 被當成閒置砍掉，背景工作一起死。<b>阻塞的東西必須丟到其他執行緒或改 async。</b></p>
+    </div>
+    <div class="alert">
+      <b>把 <code>time_of_last_update</code> 每次都設成 now → 永遠不進閒置</b>
+      <p>平台以為狀態一直在變，session 會一路跑到 8 小時上限，<b>配額被耗光</b>。自寫 <code>/ping</code> 時這個欄位要回報「上次實際變動時間」，不是「現在」。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">附帶：session 建立/銷毀途中送請求會拿到 <b>409 <code>RetryableConflictException</code></b>。AWS SDK 會自動重試，但 <b>MCP 協定回 HTTP 200、錯誤包在 JSON-RPC body 裡，不會自動重試</b>——要自己接。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>Runtime ≠ 使用者</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>AgentCore <b>只驗 session ID，不驗這個 session 屬於誰</b>。後端若直接轉送前端傳來的 session ID，A 拿到 B 的 ID 就能進 B 的 VM。<b>user↔session 對應、每使用者 session 數上限，都要自己維護。</b></span></div>
+      <div class="row"><span class="x">✗</span><span>VM 內任何程式都能透過 MMDS 拿到 execution role 憑證，而 agent 會執行<b>自己生成的程式碼</b> → 權限不得大於「能呼叫這個 agent 的人」。</span></div>
+      <div class="row"><span class="v">✓</span><span>Gateway 放前面並鎖死只接受 Gateway（繞過 Policy / Guardrails / interceptor）；限制 agent 碰 localhost（平台服務在那裡，= SSRF 進 shell）。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>版本切換不影響進行中的 session</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>VM 跑的是<b>建立當下</b>的程式碼。發新版本後舊 session 繼續跑舊碼，<b>最長 8 小時</b>。這段新舊並存期的 API 相容性要自己設計。</span></div>
+      <div class="row"><span class="x">✗</span><span><code>UpdateAgentRuntime</code> 是 <b>full PUT</b>：改一個設定也必須帶齊所有必填欄位。</span></div>
+      <div class="row"><span class="v">✓</span><span>用不可變 Version + 具名 Endpoint 做 canary / 藍綠；回滾就是把 Endpoint 指向舊版。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>V2 = SnapStart：init 階段的狀態會被<b>複製</b></h2>
+    <p class="lead">冷啟動穩定，代價是 init 做的事凍結在快照裡——每個還原的實例拿到<b>一模一樣</b>的值。</p>
+    <table>
+      <tr><td>✗ 亂數 / UUID / token</td><td>全部實例同值（<code>random</code> seed 也一樣）→ 改用 <code>os.urandom()</code></td></tr>
+      <tr><td>✗ OpenSSL 取亂數</td><td><b>還原後不重新取 seed</b>（官方已知限制）→ 向 OS 要</td></tr>
+      <tr><td>✗ 記時間 / <code>time.monotonic()</code></td><td>時間凍結在快照那刻、monotonic 不前進 → handler 裡重取</td></tr>
+      <tr><td>✗ hostname / PID 當 ID</td><td>全部 <code>localhost</code> / PID 1 → 每請求自己生成</td></tr>
+      <tr><td>✗ 快取憑證 / 工具清單</td><td>過期或凍結在快照時 → 執行期間取</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">可以放 init：import、靜態設定、暖機（client 已解析的設定會保留，連線不會）。代價：建版要<b>幾分鐘</b>、120 秒內 <code>/ping</code> 必須健康、環境變數額度砍半、<b>CFN / CDK 設不了 <code>platformVersion</code></b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span>狀態放哪</h2>
+    <table>
+      <tr><td>VM 記憶體／本機磁碟</td><td>VM 停就沒 · 暫存</td></tr>
+      <tr><td>Session storage（預覽，1 GB）</td><td>跨停止恢復，但 <b>14 天未用清空</b>、<b>升版本也清空</b></td></tr>
+      <tr><td>EFS / S3 Files（需 VPC）</td><td>永久 · 可跨 session 與 agent 共用</td></tr>
+      <tr><td>EBS（僅 Instances）</td><td>到 session 刪除為止 · 長任務 checkpoint</td></tr>
+      <tr><td>AgentCore Memory</td><td>永久 · 對話歷史與使用者偏好</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">用 Session storage 當 coding agent 工作區 → <b>每次部署新版本，使用者的專案目錄被清空</b>。要留就放 EFS。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>已經咬人的 deadline</h2>
+    <div class="alert">
+      <b>2026-06-30 · MMDSv2 強制</b>
+      <p>沒設 <code>requireMMDSV2 = true</code> 的 runtime <b>呼叫時直接 ValidationException</b>。存量 runtime 記得補。</p>
+    </div>
+    <div class="alert">
+      <b>2026-08-31 · direct code 的 Python 3.10 / 3.11 禁止更新</b>
+      <p>還在用的 runtime 下次部署前必須升級。</p>
+    </div>
+    <div class="alert">
+      <b>文件矛盾：container 的 session 建立速率</b>
+      <p>Direct code 頁寫「container 1.6/s」，Quotas 頁寫「25 TPS，兩者共用」。有流量尖峰前<b>先實測</b>。</p>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>三個設計決定</h2>
+    <ol>
+      <li>user↔session 對應誰管？→ <strong>你的後端，AgentCore 不管</strong></li>
+      <li>用 V1 還是 V2？→ <strong>要穩定冷啟動才 V2，代價是 init 不能產生狀態</strong></li>
+      <li>工作區放哪？→ <strong>要跨部署保留就不能放 Session storage</strong></li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">01-runtime/README.md</code>（查核 2026-09-30）<br>
+    冷啟動數字官方未公布 → <code class="path">01-runtime/experiments/cold-start/</code> 待實跑
+  </footer>
+
+</div>
+</body>
+</html>

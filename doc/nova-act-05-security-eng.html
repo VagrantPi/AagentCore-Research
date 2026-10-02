@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Act 安全 — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px}
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a8c7fa}
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  td.yes{color:var(--ok)}
+  td.no{color:var(--warn)}
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+  .a{color:var(--amber);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:13.5px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Amazon Nova Act</div>
+    <h1>問題不是「模型會不會被駭」</h1>
+    <p class="sub">而是「模型看到的網頁內容能不能指揮它」。官方說有訓練模型防禦，但<b>不保證擋得住</b> —— 所以設計重點是限制影響範圍。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="nova-act-04-agentcore-eng.html">&larr; NA 04 整合</a>
+    <span class="cur">NA 05 安全<a href="index.html">目錄</a></span>
+    <a href="index.html">全部 &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>威脅模型：不可信內容會變成指令</h2>
+    <pre>          你的 prompt ──┐
+                        ▼
+網頁內容（不可信）──▶ Nova Act 模型 ──▶ 動作：點擊 / 輸入 / 上傳 / 呼叫工具 / 跳轉
+   ▲  注入點                                        │
+   │                                                ▼
+   └── 惡意網站、使用者產生的內容            <b>影響範圍</b> ＝ 瀏覽器登入了哪些網站
+                                             ＋ 開放的檔案路徑
+                                             ＋ 註冊的工具
+                                             ＋ 執行環境的 IAM 權限</pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>Prompt injection</b> ＝ 在模型會讀到的內容裡藏指令。類比 SQL injection，只是「資料」和「指令」混在同一段自然語言裡，<b>沒有 prepared statement 可以用</b>。</span></div>
+      <div class="row"><span class="a">!</span><span><b>Confused deputy：</b>被 injection 操縱的 agent 本身就是一個 confused deputy —— 它拿著你的權限，替攻擊者辦事。</span></div>
+      <div class="row"><span class="a">!</span><span><b>Agent trajectory</b> ＝ 一次執行的完整軌跡：prompt、每一步的截圖、模型回應。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>官方公布：有害指令拒絕率 96.4%</h2>
+    <div class="alert">
+      <b>96.4% 意味著大約每 28 個有害指令會有 1 個沒被擋下</b>
+      <p>偏見內容拒絕率 99.5%。兩個數字都是 Amazon 自有資料集上的測試。<b>不能只靠模型把關</b> —— 模型擋不住的，就要在架構層擋。</p>
+    </div>
+    <div class="alert">
+      <b>可靠度也沒有保證：同一個 prompt 不保證每次動作都一樣</b>
+      <p>例如彈窗出現的時機不同。官方評測是取 <b>5 次的平均</b>，不是每次都對。同一段 workflow 在壓力下可能走出不同路徑。</p>
+    </div>
+    <p class="lead" style="margin-top:12px">思路跟 <b>AgentCore Policy</b> 一樣：不信任模型的判斷，用<b>確定性的規則</b>限制它能做什麼。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>SDK 的三道預設防線</h2>
+    <pre><span style="color:var(--dim)">from nova_act import NovaAct, SecurityOptions</span>
+NovaAct(
+    starting_page="https://portal.example.com",
+    security_options=SecurityOptions(
+        allowed_file_upload_paths=["/srv/job-123/uploads/*"],  <span style="color:var(--dim)"># 只開放這個任務的目錄</span>
+        # allowed_file_open_paths=[...]                       <span style="color:var(--dim)"># file:// 瀏覽，沒必要不要開</span>
+    ),
+)</pre>
+    <table>
+      <tr><th>選項</th><th>預設</th><th>寫法</th></tr>
+      <tr><td><code>allowed_file_open_paths</code></td><td class="no">關閉</td><td>特定目錄、檔案，或 <code>"*"</code>（全開，<b>不建議</b>）</td></tr>
+      <tr><td><code>allowed_file_upload_paths</code></td><td class="no">關閉</td><td>同上</td></tr>
+      <tr><td><code>state_guardrail</code>（URL 白名單）</td><td class="no">要自己加</td><td>傳一個回傳 <code>PASS</code>／<code>BLOCK</code> 的函式</td></tr>
+      <tr><td>工具註冊</td><td>—</td><td>只註冊這個 workflow 需要的</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">✗</span><span>官方警告：<b>上傳路徑要開得越窄越好</b>，否則惡意網頁可以誘導 agent「上傳」機器上的其他檔案，藉此外洩資料。</span></div>
+      <div class="row"><span class="a">!</span><span>prompt 裡寫「不要離開 example.company.com」只能當<b>輔助</b> —— prompt 本身就可能被 injection 覆蓋。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>state_guardrail 是「到了之後才擋」</h2>
+    <pre><span style="color:var(--dim)">from urllib.parse import urlparse</span>
+import fnmatch
+from nova_act import NovaAct, GuardrailDecision, GuardrailInputState
+
+ALLOWED = ["portal.example.com", "*.sso.example.com"]
+
+def url_guardrail(state: GuardrailInputState) -> GuardrailDecision:
+    host = urlparse(state.browser_url).hostname
+    if host and any(fnmatch.fnmatch(host, p) for p in ALLOWED):
+        return GuardrailDecision.PASS
+    return GuardrailDecision.BLOCK          <span style="color:var(--dim)"># 預設拒絕</span>
+
+<span style="color:var(--dim)"># 跑到白名單以外的網域，就會拋出 ActStateGuardrailError</span></pre>
+    <div class="alert">
+      <b>每次觀察之後才檢查一次 —— 頁面已經載入了</b>
+      <p>如果目標網頁<b>一載入就會觸發副作用</b>（例如 GET 請求就會執行某個動作），guardrail 擋不住。它是「事後發現」，不是「不讓它去」。</p>
+    </div>
+    <div class="alert">
+      <b>更嚴格的做法在網路層</b>
+      <p>AgentCore Browser 的 proxy 或 VPC、自建環境的 egress proxy —— <b>讓連線根本到不了</b>，才是真的擋。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>截圖會把畫面上的東西送給服務端</h2>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span>做法是：<code>act("click on the password field")</code> → <code>nova.page.keyboard.type(getpass())</code> → <code>act("sign in")</code>。模型有 guardrail，<b>不處理密碼</b>。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>但畫面上看得到的東西都會進截圖</b>，而截圖會送到服務端，也可能被寫進 S3 匯出。輸入卡號後要確認網頁有遮蔽顯示，或在輸入後直接結束這個畫面。</span></div>
+      <div class="row"><span class="x">✗</span><span>在<b>沒有系統 keyring 的 Linux</b> 上，Chromium 密碼管理器存的密碼是明文。</span></div>
+      <div class="row"><span class="a">!</span><span>保存登入狀態的 <b>profile 等於憑證</b>：依使用者隔離，並用 IAM 限制存取。</span></div>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>兩種模式的資料條款差很多</h2>
+    <table>
+      <tr><th>項目</th><th>IAM（AWS 服務）</th><th>API key（nova.amazon.com）</th></tr>
+      <tr><td>適用條款</td><td>AWS Service Terms</td><td>nova.amazon.com Terms of Use</td></tr>
+      <tr><td>用你的資料訓練模型</td><td class="yes">不會</td><td class="no">會收集互動資料與截圖，用來改進服務</td></tr>
+      <tr><td>資料刪除</td><td>依 AWS 資料處理規範</td><td>寄信到 nova-act@amazon.com 申請</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="a">!</span><span>資料用 <b>AWS owned key</b> 加密（<b>不支援 CMK</b>）。trajectory 只暫存，要保存就用 <code>exportConfig</code> 寫到自己的 S3。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>不加密的欄位：WorkflowDefinition 名稱、Workflow Run ID</b> —— 不要在名稱裡放個資或客戶編號。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>不支援 PrivateLink</b>：從私有子網路呼叫 Nova Act 要經過 NAT，走公開端點。</span></div>
+    </div>
+    <div class="note">
+      <b>「不支援 CMK」＋「不支援 PrivateLink」常常是採用門檻</b>
+      <p>金融、醫療這類有法遵要求的產業，評估前先確認法遵團隊能不能接受 AWS owned key 和經由 NAT 的公開端點。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>IAM：只能靠命名慣例分組</h2>
+    <table>
+      <tr><th>IAM 功能</th><th>支援</th><th>IAM 功能</th><th>支援</th></tr>
+      <tr><td>Identity-based policy</td><td class="yes">✅</td><td>ABAC（tag）</td><td class="no">❌</td></tr>
+      <tr><td>Resource-based policy</td><td class="no">❌</td><td>服務專屬 condition key</td><td class="no">❌（只有 <code>aws:RequestedRegion</code>）</td></tr>
+      <tr><td>資源層級權限</td><td class="yes">✅ definition / run</td><td>暫時性憑證</td><td class="yes">✅</td></tr>
+      <tr><td>Service role</td><td class="no">❌</td><td>Service-linked role</td><td>✅ 只用來發指標</td></tr>
+    </table>
+    <pre>workflow-definition: arn:aws:nova-act:{region}:{account}:workflow-definition/{WorkflowDefinitionName}
+workflow-run:        arn:aws:nova-act:{region}:{account}:workflow-definition/{name}/workflow-run/{id}</pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>不支援 ABAC</b> → 無法用「tag 相同就允許」讓權限隨 workflow 自動擴充。只能靠<b>命名慣例 ＋ ARN 萬用字元</b>（<code>workflow-definition/team-a-*</code>）分組。<b>workflow 名稱在建立之初就要設計好。</b></span></div>
+      <div class="row"><span class="v">✓</span><span>角色分工：平台管理者管 definition ＋ S3 匯出；<b>每個 workflow 一個執行角色</b>；維運／稽核只給 <code>Get*</code>／<code>List*</code>。</span></div>
+      <div class="row"><span class="x">✗</span><span>官方只有 <code>nova-act:*</code> 的 <code>NovaActFullAccess</code> 範例，要自己寫最小權限。</span></div>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>官方文件自己矛盾的地方</h2>
+    <table>
+      <tr><th>項目</th><th>Service Card</th><th>配額頁／README</th></tr>
+      <tr><td>每個 act 最多幾步</td><td>100</td><td>200（<code>max_steps</code> 預設 30）</td></tr>
+      <tr><td>時間上限</td><td>session 最長 30 分鐘</td><td class="no">act timeout 24 小時、run 1 週</td></tr>
+      <tr><td>workflow-run ARN</td><td colspan="2" class="no">指南範例少了 <code>workflow-definition/{name}/</code> 前綴 —— 以資源表和服務授權參考為準</td></tr>
+      <tr><td>建立資源類 action</td><td colspan="2" class="no">指南說只能 <code>*</code>，但授權參考列出了資源類型 —— 需實測</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="a">!</span><span>Service Card 的數字可能是<b>模型或早期版本的行為邊界</b>，配額頁是<b>服務的 API 限制</b>，兩者不一定是同一件事。</span></div>
+      <div class="row"><span class="v">✓</span><span>保守設計：<b>一個 act 控制在 30 步以內</b>（官方建議的可靠範圍）；單一 session 會超過 30 分鐘的，先實測。</span></div>
+      <div class="row"><span class="v">✓</span><span>其他細節：UA 預設含 <code>NovaAct</code>，建議自訂時保留；傳輸 TLS 1.2 以上；高風險領域（醫療、金融）<b>必須自行評估風險並加人工監督</b>。</span></div>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>上線前的八個檢查</h2>
+    <ol>
+      <li><strong>正式環境用 IAM，不用 API key</strong> —— API key 模式會收集互動資料與截圖</li>
+      <li><strong>每個 workflow 一個執行角色</strong>，資源限定到 definition 與 run</li>
+      <li><strong><code>state_guardrail</code> 採白名單、預設拒絕</strong> —— 但記得它是事後檢查</li>
+      <li><strong>上傳與 <code>file://</code> 路徑維持關閉</strong>，或只開放單一任務目錄</li>
+      <li><strong>密碼與 token 走 Playwright</strong>，並確認截圖不會截到卡號／個資</li>
+      <li><strong>不可逆操作前加確定性的核准</strong> —— 不要靠 prompt 叫模型問</li>
+      <li><strong>法遵能不能接受 AWS owned key ＋ 走 NAT 的公開端點</strong>（不支援 CMK、PrivateLink）</li>
+      <li><strong>workflow 名稱的命名慣例定了嗎</strong> —— 沒有 ABAC，之後只能靠名字分權限</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">nova-act/05-security/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Evaluations — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Evaluations = <em>針對 agent 行為的自動化測試</em></h1>
+    <p class="sub">Agent 的錯大多是語意上的 —— 答錯、選錯工具、沒完成任務，但 HTTP 狀態碼是 200。傳統測試與監控抓不到。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="06-observability-eng.html">&larr; 06 Observability</a>
+    <span class="cur">07 Evaluations<a href="index.html">目錄</a></span>
+    <a href="08-policy-eng.html">08 Policy &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>資料來源就是 06 的 trace</h2>
+    <p class="lead">評估器讀取 session、trace、span，對三個層級評分：</p>
+    <table style="margin-top:8px">
+      <tr><td>SESSION</td><td>整段對話<b>是否達成目標</b></td></tr>
+      <tr><td>TRACE</td><td>單次回答的品質（正確性、忠實度、切題、安全性…）</td></tr>
+      <tr><td>TOOL_CALL</td><td>工具<b>選得對不對、參數對不對</b></td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px"><b>沒有開 observability 就沒有評估</b> —— 需要 Transaction Search + ADOT instrumentation。所以 06 是 07 唯一的資料來源。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>評估器有四種，價格差三個數量級</h2>
+    <table>
+      <tr><td>Built-in</td><td>16 個，多數用 LLM 當評審。<b>軌跡比對類（<code>Trajectory*Match</code>）是程式判斷，不花 token</b></td></tr>
+      <tr><td>Third-party</td><td>DeepEval、AutoEval，AWS 代管執行</td></tr>
+      <tr><td>Custom LLM-as-judge</td><td>自訂評分指示與量表，可選模型</td></tr>
+      <tr><td>Code-based</td><td>Lambda 寫確定性規則：<b>JSON 格式、個資洩漏（regex）、是否呼叫禁用 API</b></td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">✗</span><span><b>Built-in 的數量三種說法</b>：文件寫 16 個、定價頁寫 13 個、文件另列 17 個評審範本。<b>不要在文件或程式裡寫死數量</b>。</span></div>
+      <div class="row"><span class="x">✗</span><span>Code-based 輸入是整個 session 的 span，<b>超過 6 MB 會被截斷</b> → 長 session 可能看不到完整資料。Lambda 最長 300 秒。</span></div>
+      <div class="row"><span class="v">✓</span><span>關鍵指標優先用<b>確定性方法</b>（code-based、軌跡比對），把 LLM 評審留給沒有確定性答案的品質面向。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>Ground truth 只能離線用</h2>
+    <p class="lead">Ground truth（標準答案、斷言、預期工具順序）只能用在<b>離線</b>評估 —— 線上正式流量沒有標準答案。</p>
+    <div class="alert">
+      <b>用了 ground truth placeholder 的自訂評估器，不能放進 online 評估</b>
+      <p>規劃 online 設定時要先確認每個評估器的 placeholder。</p>
+    </div>
+    <div class="alert">
+      <b>自訂評估器一旦被啟用中的 online 設定引用，就會被鎖住</b>
+      <p><b>不能修改或刪除</b>（不只 code-based，LLM 評審一樣）。要改先停用設定，或<b>複製一份新的</b>。改 prompt 的迭代節奏會被這個鎖定拖慢。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>五種執行模式</h2>
+    <table>
+      <tr><td>Online</td><td>正式流量抽樣持續評分。<b>不能用 ground truth</b>；每設定最多 25 個評估器，每帳號最多 1,000 個設定</td></tr>
+      <tr><td>On-demand</td><td>指定 trace／session。<b>要先等 CloudWatch 收進資料，約 2–5 分鐘</b>；每請求只能用 1 個評估器</td></tr>
+      <tr><td>Batch</td><td>改動前後比較、回歸測試。<b>token 單價 75 折</b>；同時只能跑 5 個，每 job 最多 500 個 session</td></tr>
+      <tr><td>Dataset</td><td>Runner <b>實際呼叫 agent</b>再評分 ≈ 整合測試（預覽）</td></tr>
+      <tr><td>Simulation</td><td>LLM 扮演使用者多輪對話。<b>只能用 <code>assertions</code></b>，扮演者的模型費另計</td></tr>
+    </table>
+    <div class="note">
+      <b>導入順序</b>
+      <p>開發期 on-demand + dataset 進 CI → 上線前 simulation 擴大覆蓋 → 上線後 online 抽樣監控 → 每次改 prompt 前後用 batch 比較。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>LLM 評審本身不可全信</h2>
+    <p class="lead">評審也是 LLM，<b>分數會有雜訊和偏誤</b> —— 例如偏好比較長的回答，或偏好跟自己同一系列的模型。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span>看<b>趨勢和分布</b>，不要看單一分數；定期抽樣人工複核校準。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>孟買與新加坡的內建評估器速率只有其他區域的六分之一</b>（200 次 vs 1,200 次／分鐘），<b>不可調整</b> → 把這些區域的評估流量算進容量規劃。</span></div>
+      <div class="row"><span class="x">✗</span><span>內建評估器<b>可能跨區域推論</b>執行 → 有資料駐留要求時要先確認。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>Optimization 閉環</h2>
+    <pre>trace → Recommendations（新的 system prompt / 工具說明）
+     → configuration bundle（不可變、有版本的設定快照）
+     → Gateway rules 分流 A/B test（附統計顯著性）→ 全量上線</pre>
+    <p class="lead">Configuration bundle 把「agent 的行為設定」從程式碼抽出來：Gateway 用 W3C baggage header（<code>aws.agentcore.configbundle_arn</code>）告訴 Runtime 用哪個版本，agent 端用 <code>BedrockAgentCoreContext.get_config_bundle()</code> 取得。</p>
+    <div class="alert" style="border-color:#4a2028">
+      <b style="color:var(--warn)">一定要設定預設值</b>
+      <p>沒有 A/B test 時會拿到<b>空的 dict</b>，而 API 呼叫失敗時會<b>直接拋出例外</b>。兩種狀況都會讓 agent 起不來。</p>
+    </div>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">✗</span><span><b>每個 gateway 同時只能跑 1 個 A/B test，而且只能分成兩組</b>（對照組 + 一個實驗組）；每個帳號同時最多 20 個。</span></div>
+      <div class="row"><span class="v">✓</span><span>Insights 預覽期免費；Recommendations 本身免費，只收它用到的 Evaluations 費用。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>配額與計費</h2>
+    <table>
+      <tr><td>Built-in</td><td>每千 input token $0.0024 / 每千 output token $0.012</td></tr>
+      <tr><td>自訂評估器</td><td>每千次評估 $1.50，<b>模型費用另計</b></td></tr>
+      <tr><td>單次上限</td><td>每次 200,000 input token；每 session 20,000 span、200 MB</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px"><b>成本直覺：</b>評審要讀完整對話上下文，所以<b>長對話的評估成本跟著上下文長度增加</b>。Online 的抽樣比例與評估器數量是主要的成本控制手段。</p>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的五個檢查</h2>
+    <ol>
+      <li>Transaction Search 與 ADOT 都到位了嗎？<strong>沒有 trace 就沒有評估</strong></li>
+      <li>關鍵指標有<strong>確定性</strong>的評估器（code-based／軌跡比對）嗎？還是全部靠 LLM 評審</li>
+      <li>自訂評估器有沒有<strong>被鎖住</strong>？改 prompt 前先確認它沒被啟用中的 online 設定引用</li>
+      <li>CI 裡的 on-demand 有<strong>加 2–5 分鐘等待</strong>嗎？</li>
+      <li>孟買／新加坡的<strong>六分之一速率</strong>有算進容量規劃嗎？</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">07-evaluations/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

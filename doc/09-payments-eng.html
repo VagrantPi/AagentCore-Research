@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore Payments — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre i{color:#5c6b85;font-style:normal}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{
+    counter-increment:s;display:flex;gap:12px;align-items:baseline;
+    padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);
+  }
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>Payments = <em>讓 agent 自己付錢</em></h1>
+    <p class="sub">呼叫一次付費 API 的價值往往只有幾美分，信用卡的最低手續費讓這種微支付做不起來 —— 而且為每個供應商各自簽約也不實際。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="08-policy-eng.html">&larr; 08 Policy</a>
+    <span class="cur">09 Payments<a href="index.html">目錄</a></span>
+    <a href="90-integrations-eng.html">90 整合 &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>用 HTTP 402 走標準流程，以 USDC 結算</h2>
+    <pre>agent → 商家：GET /premium-data
+商家 → agent：<b>402 Payment Required</b>（金額、收款方、幣別、網路）
+agent → AgentCore：ProcessPayment（session、instrument、402 內容）
+  → 檢查 session 預算與到期時間（超過就拒絕）
+  → 透過 Identity 取憑證、向錢包供應商簽署 → 回傳付款證明
+agent → 商家：<b>重試</b>，帶上 X-PAYMENT header
+商家：驗證並上鏈結算 → 200 + 內容</pre>
+    <div class="stack">
+      <div class="row"><span class="v">✓</span><span><b>Agent 端全部自動</b>：Strands 用 <code>AgentCorePaymentsPlugin</code>、LangGraph 用 <code>AgentCorePaymentsMiddleware</code>，攔截 402、呼叫 <code>ProcessPayment</code>、自動重試。<b>agent 的工具程式碼只寫一個普通的 <code>http_request</code></b>。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>私鑰和錢包憑證不會進到 agent 裡</b> —— 存放在 Identity 的 payment credential provider（token vault + Secrets Manager）。</span></div>
+      <div class="row"><span class="v">✓</span><span>用 <code>clientToken</code> 確保<b>同一筆付款不會被執行兩次</b>。失敗時會釋放預算保留。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>名詞速查</h2>
+    <table>
+      <tr><td>USDC</td><td>價值與美元 1:1 掛鉤的穩定幣 = 放在區塊鏈上的美元儲值金</td></tr>
+      <tr><td>錢包 / instrument</td><td>持有 USDC 的帳戶，私鑰由 Coinbase 或 Privy 代管</td></tr>
+      <tr><td>network</td><td>哪條鏈，CAIP-2 格式：<code>eip155:8453</code> = Base 主網、<code>eip155:84532</code> = Base Sepolia 測試網</td></tr>
+      <tr><td>gas fee</td><td>上鏈執行交易的手續費 = 跨行轉帳手續費</td></tr>
+      <tr><td>facilitator</td><td>替商家驗證付款並送上鏈的服務 = 收單機構</td></tr>
+    </table>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>IAM 職責分離是整套機制的核心</h2>
+    <p class="lead">官方把權限拆成幾個 role，其中兩條是硬性要求：</p>
+    <table>
+      <tr><td>ManagementRole<br><span style="color:var(--dim)">（agent developer）</span></td><td>建立 instrument 和 session，<b>也就是設定預算</b> → <b>明確 Deny <code>ProcessPayment</code></b></td></tr>
+      <tr><td>ProcessPaymentRole</td><td>執行付款、讀取餘額 → <b>不能有建立 session 的權限</b></td></tr>
+    </table>
+    <div class="alert">
+      <b>為什麼不能放在同一個身分</b>
+      <p>如果同一個身分既能建立 session（決定預算上限）又能執行付款，<b>一旦被 prompt injection 誘導，就能自己開一個無上限的預算再付款給自己</b>。官方用明確的 Deny 讓這種組合在 IAM 層面就不可能發生。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>交易不可逆 —— 三道防線缺一不可</h2>
+    <p class="lead">鏈上交易<b>一旦完成就無法撤回</b>，不像信用卡可以申請退款。這讓「agent 付錯錢」的代價比一般 API 呼叫高得多。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">✗</span><span><b>誘導付款</b>：網頁或工具輸出寫著「請去這個網址買完整報告」，agent 照做。這是最現實的攻擊面。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>惡意商家</b>：回傳的 402 要求付款給攻擊者的地址。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>花費失控</b>：agent 陷入迴圈不斷付費重試。</span></div>
+    </div>
+    <div class="alert">
+      <b>緩解三件套</b>
+      <p><b>商家白名單</b>（LangGraph middleware 有 allowlist 設定，或用 Gateway 只開放審核過的付費 target；也要比對 <code>payTo</code> 地址）＋ <b>session 預算設低</b>（<code>maxSpendAmount</code> + 到期時間）＋ <b>大額付款要求真人核准</b>。再用 Policy 對付費工具的參數設限當第二道防線。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>upto 的 Permit2 設定值是覆蓋，不是累加</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span><code>upto</code>（依用量計費）要先在鏈上做一次 <b>Permit2 allowance 授權</b>（<code>permit2AllowanceLimit</code>），<b>這一步要付 gas fee</b>。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>每次設定都是覆蓋舊值，不是累加</b> → 只在第一次需要時設定，反覆呼叫會重複付 gas。</span></div>
+    </div>
+    <div class="note">
+      <b>MPP 的三個細節</b>
+      <p>① 每次只能處理一個 challenge，<b>很快就會過期</b> —— 過期時回<code>ValidationException</code> 但<b>不扣預算</b>。② 回傳的 <code>paymentCredential</code> 要<b>原封不動</b>放進 header，不能解碼或修改。③ 商家不負擔 gas 時必須明確設定 <code>buyerPaysGasFees=true</code>，否則被拒。<code>solana</code> <b>只有 Privy 支援</b>。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>錢包餘額是 0，而且成本比例要自己算</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span><b>錢包建立時餘額是 0。</b>使用者要自己登入供應商 wallet hub 入金（加密貨幣、信用卡、金融卡、Apple Pay、Google Pay、ACH —— <b>信用卡在部分地區無法使用</b>），並<b>明確授權</b> agent 可以用這個錢包（之後可撤銷）。</span></div>
+      <div class="row"><span class="x">✗</span><span>這代表<b>使用者要自己管理一個加密錢包</b>，一般消費者門檻不低 → 比較適合 B2B 或企業預先儲值。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>成本直覺</b>：每次付費呼叫若只值 $0.01，Coinbase 每次操作 $0.005 就佔了 <b>50%</b>。AWS 本身不另外收費，但供應商操作費 + gas fee 要先算進定價。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>區域與不確定性</h2>
+    <div class="stack">
+      <div class="row"><span class="x">✗</span><span>支援美國、歐洲、新加坡、雪梨；<b>東京、首爾、孟買不支援</b>。發表時的部落格只寫 4 個區域，之後才擴充 —— <b>不要照部落格文章規劃區域</b>。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>是否已 GA 官方文件沒有明確寫出</b>（2026-05-07 以預覽狀態發表）。要上線前先確認。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>法遵要自己評估</b> —— 加密資產支付各地法規不同，<b>在台灣導入前需要法遵評估</b>，官方文件沒有涵蓋這部分。</span></div>
+      <div class="row"><span class="v">✓</span><span>生態系：x402 Bazaar 已整合成 Gateway 的一個 target（可搜尋一萬多個付費端點）；也可以<strong>把自己的 API 做成 x402 收費</strong>（官方範例是每次呼叫 $0.01），另一種商業模式。</span></div>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的六個檢查</h2>
+    <ol>
+      <li><code>ManagementRole</code> 與 <code>ProcessPaymentRole</code> <strong>真的分開了嗎</strong>？有明確 Deny 嗎</li>
+      <li><strong>商家白名單</strong>在哪一層？plugin／middleware 的 allowlist 還是 Gateway target</li>
+      <li>session 的 <code>maxSpendAmount</code> 與到期時間設多小？<strong>大額付款有人工核准嗎</strong></li>
+      <li>錢包誰入金、<strong>誰授權 agent 使用</strong>？信用卡不可用的地區怎麼處理</li>
+      <li>定價有算過 <strong>供應商操作費佔比</strong>嗎（$0.01 商品會被 $0.005 吃掉一半）</li>
+      <li><strong>部署區域</strong>在支援清單內嗎？GA 狀態與台灣法遵確認過了嗎</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">09-payments/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCore 總覽 — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:14px;
+  }
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  .lead:last-child{margin-bottom:0}
+  code{
+    background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#a8c7fa;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  .yes{color:var(--ok);font-weight:700}
+  .mid{color:var(--amber);font-weight:700}
+  .no{color:var(--warn);font-weight:700}
+
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Bedrock AgentCore</div>
+    <h1>總覽 = <em>agent 專用的執行平台</em></h1>
+    <p class="sub">12 個元件、四層職責。它不是框架也不是模型，而是一組把 agent 跑起來、把關、管好、看得見的託管基礎設施。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="index.html">&larr; 全部</a>
+    <span class="cur">00 總覽<a href="index.html">目錄</a></span>
+    <a href="01-runtime-eng.html">01 Runtime &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>定位：模型不綁、框架不綁、元件可單獨用</h2>
+    <p class="lead">AgentCore 是 AWS 為 AI agent 準備的一組託管服務，定位像 <b>agent 專用的 Lambda ＋ API Gateway</b>，再加上 Cognito、CloudWatch 這類周邊的組合包。</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span><b>模型不綁</b>：Bedrock 上的 Claude 可以，OpenAI、Gemini 也可以 —— agent 自己去呼叫供應商。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>框架不綁</b>：LangGraph、Strands，或者自己寫迴圈都行。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>元件可單獨使用</b>：只想用 Memory，agent 跑在自己的 EKS 上也沒問題。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">名詞對齊（用後端概念理解）：agent loop 本質就是 <code>while (!done) { ... }</code>，只是控制流程由 LLM 在執行期決定；tool 是<b>帶 OpenAPI 描述的 endpoint</b>；MCP 是<b>工具界的 USB 介面</b>（或 LSP 之於編輯器）；session 等同 web session；token 約 0.75 個英文單字或 1–2 個中文字；LLM 則是<b>很聰明但無狀態、不保證輸出一致</b>的外部 API。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>12 個元件，依職責分四層</h2>
+    <table>
+      <tr><th>層</th><th>元件</th><th>用熟悉的東西類比</th></tr>
+      <tr><td><b>執行層</b><br>agent 在哪裡跑</td><td>Harness、Runtime、Built-in Tools</td><td>Harness 像 Heroku；Runtime 像 Lambda ＋ Fargate，但 session 可活 8 小時；Built-in Tools 像用完即丟的沙箱 container</td></tr>
+      <tr><td><b>連接與治理層</b><br>agent 能碰什麼</td><td>Gateway、Identity、Policy、Payments、Registry</td><td>Gateway 專給 agent 的 API Gateway；Identity 像 Cognito ＋ Secrets Manager；Policy 像 IAM policy 但套在「agent 想呼叫某工具」這個動作上</td></tr>
+      <tr><td><b>狀態層</b></td><td>Memory</td><td>Redis session store ＋ 自動整理的使用者 profile DB</td></tr>
+      <tr><td><b>營運層</b><br>跑得好不好</td><td>Observability、Evaluations、Optimization</td><td>Observability 像 X-Ray，但 span 是「模型呼叫」「工具呼叫」；Evaluations 像跑在正式流量上的自動化測試</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">Harness、Optimization、Registry 官方有列，但本 repo 沒有獨立篇章：Harness 併入本篇延伸、Optimization 併入 07、Registry 併入 03。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>為什麼不能直接丟到 Lambda</h2>
+    <p class="lead">元件的設計對應的是 agent 工作負載的四個特性 —— 每一項都是一般 serverless 服務處理起來很吃力的地方：</p>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="x">1</span><span><b>執行時間長、大部分時間在等</b>：一次任務可能要呼叫十幾次模型，總長從數分鐘到數小時，但 CPU 大多閒著。<b>Lambda 最長只跑 15 分鐘，而且等待時間一樣計費。</b></span></div>
+      <div class="row"><span class="x">2</span><span><b>有狀態</b>：多輪對話要在同一個環境累積上下文和檔案。</span></div>
+      <div class="row"><span class="x">3</span><span><b>行為不確定</b>：同輸入不保證同輸出，而且 agent 可能執行<b>它自己產生的程式碼</b> → 所以要每 session 硬隔離（microVM），出事時影響範圍也控制得住。</span></div>
+      <div class="row"><span class="x">4</span><span><b>一定會碰到外部系統</b>：要代替使用者存取 Slack、GitHub，憑證管理和授權就是核心問題，不是附加功能。</span></div>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>一個請求怎麼走：Policy 掛在 Gateway，不是掛在 agent</h2>
+    <p class="lead">以「客服 agent 幫忙查訂單並退款」為例：使用者帶 JWT 或 SigV4 呼叫 Runtime → Identity 驗證 inbound → 讀 Memory → 進入 agent loop：問模型要呼叫什麼 → 模型說 <code>refund(order=123)</code> → <b>Gateway 先問 Policy 這個人能不能呼叫 refund（Cedar 評估 JWT claims）</b> → 拿到後端的 OAuth token → 真的打 API → 結果餵回模型 → 迴圈結束 → 寫回 Memory 並非同步萃取長期記憶。</p>
+    <div class="note">
+      <b>兩個關鍵事實</b>
+      <p>① 授權發生在<b>工具被呼叫之前</b>，而且由<b>確定性的程式規則</b>決定，不交給 LLM 判斷 —— <b>就算模型被 prompt injection 騙了，也繞不過這道檢查</b>。② <b>模型呼叫不經過 AgentCore</b>，agent 自己去呼叫供應商，token 費用另外算。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>Harness vs Runtime：最重要的一個選擇</h2>
+    <table>
+      <tr><th></th><th>Harness</th><th>Runtime</th></tr>
+      <tr><td><b>agent loop 由誰寫</b></td><td>AWS 提供（底層是 Strands Agents）</td><td>你自己寫（任何框架，或不用框架）</td></tr>
+      <tr><td><b>怎麼定義 agent</b></td><td>設定檔：model、system prompt、tools、memory、limits</td><td>程式碼 ＋ <code>BedrockAgentCoreApp</code> entrypoint，打包成 ARM64 container 或 zip</td></tr>
+      <tr><td><b>接 Memory / Gateway / 憑證</b></td><td>一個設定欄位</td><td>自己在程式碼裡呼叫 SDK</td></tr>
+      <tr><td><b>換模型供應商</b></td><td>改設定即可，甚至同一個 session 中途切換</td><td>自己實作</td></tr>
+      <tr><td><b>難做的情境</b></td><td class="no">選框架、雙向串流、graph／workflow 編排、複雜多 agent 協作</td><td class="yes">都能做，但都要自己寫</td></tr>
+      <tr><td><b>額外費用</b></td><td>無，只付底層用到的資源</td><td>無</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">官方建議<b>先用 Harness</b>，有明確理由才自己掌控 loop（例如既有 agent 程式碼要搬過來）。Harness 也<b>能匯出成 Strands 程式碼</b>再改用 Runtime 部署，所以不算單向綁定 —— 兩者共用 Runtime 的配額，Harness 底層就跑在 Runtime 上。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>計費：大宗不是運算，是 token</h2>
+    <p class="lead">全部按用量計費，沒有最低消費。一個 session 試算：1 vCPU 實際運算 60 秒、2 GB 記憶體維持 5 分鐘 → CPU 約 $0.0015 ＋ 記憶體約 $0.0016 ≈ <b>每 session $0.003</b>。實務上<b>模型的 token 費用通常才是大宗</b>，而且不含在 AgentCore 帳單裡。</p>
+    <table style="margin-top:12px">
+      <tr><th>項目</th><th>價格</th><th>注意</th></tr>
+      <tr><td>Runtime v1（vCPU／GB per hour）</td><td>$0.0895／$0.00945</td><td class="yes">等待 I/O 不收 CPU 費，按秒計、最少 1 秒</td></tr>
+      <tr><td>Runtime v2</td><td>$0.1276／$0.0169</td><td class="mid">較貴，但閒置 120 秒會回收記憶體</td></tr>
+      <tr><td>Runtime Instances</td><td>EC2 On-Demand 的 12%（GPU 7.8%）</td><td>用自己帳號的 EC2，session 最長 14 天</td></tr>
+      <tr><td>Web Search</td><td>每千次 $7.00</td><td class="no">相對偏貴</td></tr>
+      <tr><td>Gateway</td><td>InvokeTool／ListTools 每千次 $0.005、Search $0.025</td><td>另有工具索引費：每 100 個工具每月 $0.02</td></tr>
+      <tr><td>Identity</td><td>每千次 token／API key 請求 $0.010</td><td class="yes">經 Runtime 或 Gateway 使用時免費</td></tr>
+      <tr><td>Memory</td><td>短期每千事件 $0.25；長期儲存每千筆每月 $0.75；長期檢索每千次 $0.50</td><td></td></tr>
+      <tr><td>Evaluations</td><td>內建每千 input token $0.0024；自訂每千次 $1.50</td><td>自訂評估器的模型費用另計</td></tr>
+      <tr><td>Policy</td><td>每次授權檢查 $0.000025</td><td>每百萬次 $25 —— 量大的話不是小錢</td></tr>
+      <tr><td>Harness</td><td>不另外收費</td><td class="yes">只付底層 Runtime 等資源</td></tr>
+    </table>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>區域與配額：兩個會擋住架構決策的地方</h2>
+    <div class="note">
+      <b>沒有台灣區。從台灣出發，東京（<code>ap-northeast-1</code>）是元件最齊的亞太區，唯一缺 Payments</b>
+      <p>Runtime <b>V2 平台只有東京</b>（新加坡、紐雪梨、首爾、孟買都沒有）。us-east-1 與 us-west-2 功能最完整、配額也最高。</p>
+    </div>
+    <div class="note">
+      <b>⚠️ Web Search 的可用區域，官方文件前後不一致</b>
+      <p>區域表寫 us-east-1、愛爾蘭、東京；Harness 的 Tools 頁卻寫「只有 us-east-1」。要用 Web Search 前先確認目標區域。</p>
+    </div>
+    <table style="margin-top:12px">
+      <tr><th>配額</th><th>預設</th><th>可調</th></tr>
+      <tr><td>單一 session 硬體上限</td><td>2 vCPU／8 GB</td><td class="no">✗ 重運算要拆出去做</td></tr>
+      <tr><td>session 最長存活／閒置逾時</td><td>8 小時／15 分鐘</td><td class="yes">✓（<code>LifecycleConfiguration</code>）</td></tr>
+      <tr><td>同步請求逾時</td><td>15 分鐘</td><td class="no">✗ 更長的要走非同步模式</td></tr>
+      <tr><td><b>新 session 建立速率</b></td><td><b>25 TPS／帳號</b></td><td class="yes">✓ 流量尖峰最容易先撞到的上限</td></tr>
+      <tr><td>同時存在的 session 數</td><td>us-east-1、us-west-2：5,000；其他區：2,500</td><td class="yes">✓</td></tr>
+      <tr><td>Gateway 工具呼叫速率</td><td>200 TPS（每個 gateway 與整個帳號都是）</td><td class="yes">✓</td></tr>
+      <tr><td>Container image 大小</td><td>2 GB</td><td class="no">✗</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px">推論：<b>session 狀態是暫時的</b>，要長期保存的東西得寫進 Memory 或 S3；同步呼叫最多 15 分鐘，長任務的架構要從一開始就按非同步設計。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>Bedrock Agents 已改名 Classic，而且新帳號進不去</h2>
+    <p class="lead">2023-11 推出的全託管 Bedrock Agents，自 <b>2026-07-30</b> 起更名為 <b>Bedrock Agents Classic</b> 並進入維護模式。</p>
+    <div class="alert">
+      <b>沒有使用紀錄的帳號呼叫 <code>CreateAgent</code> 會收到 403，而且沒有例外申請管道</b>
+      <p>模型清單凍結在 2026-07-30，之後的新模型只出現在 AgentCore。目前<b>沒有公布終止日期</b>，也沒有強制遷移期限。Bedrock 本身（模型推論、Knowledge Bases、Guardrails）不受影響。</p>
+    </div>
+    <table style="margin-top:12px">
+      <tr><th>Classic</th><th>AgentCore</th></tr>
+      <tr><td>託管的 orchestration</td><td>Harness</td></tr>
+      <tr><td>Action groups（OpenAPI ＋ Lambda）</td><td>Gateway 包成的 MCP 工具</td></tr>
+      <tr><td>直接掛 Knowledge Base</td><td>透過 Gateway 或 retrieval 工具存取</td></tr>
+      <tr><td>Prompt override（各階段）</td><td class="no">只有整體 system prompt，無法逐階段覆寫</td></tr>
+      <tr><td>Multi-agent collaboration</td><td class="mid">Harness 只支援 agent-as-tool，複雜協作要改用 Runtime 自己寫</td></tr>
+      <tr><td>Return of control</td><td>Harness 的 inline function tools</td></tr>
+    </table>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的七個檢查</h2>
+    <ol>
+      <li><strong>Harness 還是 Runtime</strong>？有沒有既存 agent 程式碼要搬，或 Harness 表達不了的編排需求</li>
+      <li><strong>目標區域</strong>有沒有 V2、Payments、Web Search？東京缺 Payments，V2 只有東京</li>
+      <li><strong>session 設計</strong>：8 小時上限、15 分鐘同步逾時 —— 長任務是不是該走非同步</li>
+      <li><strong>新 session 速率 25 TPS</strong>夠不夠尖峰流量</li>
+      <li><strong>成本看的是 token 不是運算</strong>：Web Search、Evaluations、Policy 檢查次數、CloudWatch 日誌量才是要盯的項目</li>
+      <li><strong>Policy 掛在 Gateway</strong>：換框架時治理層不用重做，但要在 Gateway 前面確認 Cedar 規則</li>
+      <li><strong>Classic 遷移</strong>：逐階段 prompt override 與多 agent 協作沒有直接對應的替代品，要先想清楚</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">00-overview/README.md</code>（含 <code>harness-vs-runtime.md</code>、<code>build-vs-buy.md</code>）· 查核 2026-09-30
+  </footer>
+
+</div>
+</body>
+</html>

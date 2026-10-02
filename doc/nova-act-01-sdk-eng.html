@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Act SDK — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px}
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a8c7fa}
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  pre b{color:var(--ink);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+  .a{color:var(--amber);flex:none;font-weight:700}
+  td.yes{color:var(--ok)}
+  td.no{color:var(--warn)}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+  @media(max-width:600px){}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Amazon Nova Act</div>
+    <h1>SDK = <em>act 做事，Playwright 收尾</em></h1>
+    <p class="sub">用 <code>act()</code> 交代任務、用 <code>nova.page</code> 補確定性操作、用 <code>Workflow</code> 把執行紀錄接上 AWS。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="nova-act-00-overview-eng.html">&larr; NA 00 總覽</a>
+    <span class="cur">NA 01 SDK<a href="index.html">目錄</a></span>
+    <a href="nova-act-02-deploy-operate-eng.html">NA 02 部署 &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>最小程式與三種開發模式</h2>
+    <pre>with NovaAct(starting_page="https://...") as nova:
+    nova.act("搜尋 rubber duck debugging")   # SDK 會開瀏覽器、跑 loop、結束後關閉</pre>
+    <table>
+      <tr><th>模式</th><th>用法</th><th>適合</th></tr>
+      <tr><td>Script</td><td><code>with NovaAct(...)</code></td><td>正式腳本</td></tr>
+      <tr><td>Interactive</td><td><code>nova.start()</code> 後在 REPL 一句一句試。<code>ctrl+x</code> 中斷 act 但<b>保留瀏覽器</b>；<code>ctrl+c</code> 會關掉</td><td>調 prompt</td></tr>
+      <tr><td>Async</td><td><code>from nova_act.asyncio import NovaAct</code></td><td>asyncio 程式</td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="v">✓</span><span><b>Act trace：</b>每個 act 結束產生一份<b>獨立 HTML</b>，記錄每一步截圖和動作，路徑印在 console（用 <code>logs_directory</code> 指定）。</span></div>
+      <div class="row"><span class="a">!</span><span><b>Time worked 不能對帳</b>（官方說只是估計值）。想看 headless 瀏覽器就設 <code>NOVA_ACT_BROWSER_ARGS="--remote-debugging-port=9222"</code>。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>只支援英文 prompt</b>；<b>不能在 Jupyter 裡用</b>。首次執行裝 Playwright 瀏覽器約 1–2 分鐘。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>act() 做事，act_get() 做事並取資料</h2>
+    <pre>result = nova.act_get("Return the cheapest flight", schema=Flight.model_json_schema())
+flight = Flight.model_validate(result.parsed_response)   # <b>schema 不符會拋 ActInvalidModelGenerationError</b></pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>要拿資料就一定要傳 schema</b>（可用 pydantic 產生），否則回傳值裡沒有 <code>response</code>。這層 schema 的角色就像呼叫外部 API 時的 <b>response DTO 驗證</b> —— 模型輸出不保證正確。</span></div>
+      <div class="row"><span class="a">!</span><span><b>擷取資料要獨立一個 act。</b>官方建議不要在同一個 act 裡「先操作再擷取」。</span></div>
+      <div class="row"><span class="v">✓</span><span><code>act_get("Am I logged in?", schema=BOOL_SCHEMA)</code> 適合當流程分支的條件。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>用 <code>max_steps</code> 而非 <code>timeout</code></b>（預設 30，硬上限 200）—— 每一步時間會隨服務負載與網站速度浮動。另有 <code>observation_delay_ms</code> 等動畫跑完再截圖。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>prompt 三原則：直接、講完整、拆小</h2>
+    <div class="stack">
+      <div class="row"><span class="v">✓</span><span><b>直接：</b>寫「Navigate to the routes tab」，不要寫「Let&rsquo;s see what routes vta offers」。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>講完整：</b>條件、偏好、<b>停在哪裡</b>都要寫（例如「stop when you get to the payment page」）。當成交代一個不熟悉這網站的新同事。</span></div>
+      <div class="row"><span class="v">✓</span><span><b>拆小：</b>前一個 act 的輸出當下一個的輸入，中間用 Python 串。不穩就再拆得更細。</span></div>
+      <div class="row"><span class="a">!</span><span>小技巧：<b>日期用絕對日期</b>；找不到搜尋按鈕時加「type enter to initiate the search」。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">「拆小」同時改善<b>可靠度、速度和成本</b>。把確定性的部分（跳轉 URL、填帳密、下載）從 act 移到 Python／Playwright，是最直接的優化。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>nova.page 就是 Playwright 的 Page</h2>
+    <table>
+      <tr><th>需求</th><th>做法</th><th>為什麼不交給模型</th></tr>
+      <tr><td>輸入密碼／卡號</td><td><code>act("click on the password field")</code> 後用 <code>nova.page.keyboard.type(getpass())</code></td><td>模型會<b>拒絕</b>處理密碼</td></tr>
+      <tr><td>換頁</td><td><code>nova.go_to_url(url)</code></td><td>比 <code>page.goto</code> 更能等到真的載入完成</td></tr>
+      <tr><td>下載</td><td><code>with nova.page.expect_download() as d: nova.act("click download")</code></td><td>模型負責點，Playwright 接住檔案</td></tr>
+      <tr><td>原生對話框</td><td><code>nova.page.on("dialog", handler)</code></td><td>Playwright 預設會<b>自動關掉</b>對話框</td></tr>
+      <tr><td>上傳</td><td><code>SecurityOptions(allowed_file_upload_paths=[...])</code></td><td><b>預設禁止上傳</b>，路徑開得越窄越好</td></tr>
+    </table>
+    <div class="alert" style="border-color:#4a2028;background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:12px">
+      <b style="color:var(--warn);display:block;margin-bottom:4px;font-size:14px">用 Playwright 填了密碼就安全了嗎？沒有</b>
+      <p style="font-size:13.5px;color:var(--dim)">如果之後的 act 截圖時密碼<b>顯示在畫面上</b>，還是會被截進去傳給模型。填完密碼要立刻導向不會回顯的頁面。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>重試不是冪等的 —— 可能執行兩次</h2>
+    <table>
+      <tr><th>類別</th><th>意思</th><th>怎麼處理</th></tr>
+      <tr><td><code>ActAgentError</code></td><td>任務沒完成（<code>ActAgentFailed</code>、<code>ActExceededMaxStepsError</code>、<code>ActInvalidModelGenerationError</code>）</td><td>改 prompt 或拆小後重試</td></tr>
+      <tr><td><code>ActClientError</code></td><td>請求被拒（<code>ActGuardrailsError</code>、<code>ActRateLimitExceededError</code>）</td><td>調整請求或<b>降速退避</b></td></tr>
+      <tr><td><code>ActExecutionError</code></td><td>本機執行失敗（<code>ActActuationError</code>、<code>ActCanceledError</code>）</td><td>回報 bug</td></tr>
+      <tr><td><code>ActServerError</code></td><td>服務端錯誤</td><td>回報 bug</td></tr>
+    </table>
+    <div class="alert">
+      <b>Workflow 預設在請求逾時時重試一次（<code>read_timeout</code> 60 秒）</b>
+      <p>官方提醒：<b>同一個請求重試，可能真的被執行了兩次，費用也算兩次。</b>後端類比 —— act 不是冪等的（idempotent），一個「送出訂單」的 act 重試可能下兩次單。</p>
+    </div>
+    <div class="alert">
+      <b>有副作用的 act，重試前先確認狀態</b>
+      <p>用 <code>act_get(schema=BOOL_SCHEMA)</code> 問「訂單已經送出了嗎」，確認沒送出才重試。順序是<b>送出前檢查 → 送出 → 送出後確認</b>。</p>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>Workflow 是 IAM 的前提，而且有傳遞陷阱</h2>
+    <div class="alert">
+      <b>要用 IAM 驗證就必須走 Workflow</b>
+      <p>進入時呼叫 <code>CreateWorkflowRun</code>，結束時 <code>UpdateWorkflowRun</code>，中間所有 session／act／step 都掛在這個 run 底下，Console 才能依層級呈現。API key（<code>NOVA_ACT_API_KEY</code>）則不需要，但互動資料會被收集。</p>
+    </div>
+    <div class="alert">
+      <b>ContextVar 不會自動傳到新的執行緒</b>
+      <p>用 <code>@workflow</code> decorator 時要搭配 <code>copy_context().run</code>，或用 <code>get_current_workflow()</code> 手動傳入。<b>多 process 不支援</b>（boto3 client 無法 pickle）。</p>
+    </div>
+    <div class="alert">
+      <b>平行 = 開多個 NovaAct 實例，上限是 5 TPS</b>
+      <p>一個實例就是一個瀏覽器、只能單執行緒。真正的瓶頸是 <code>InvokeActStep</code> 的 <b>5 TPS 配額</b>與本機能同時開幾個 Chromium，收到 <code>ActRateLimitExceededError</code> 要退避重試。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>保存登入狀態：四種 provider，雲端只剩兩個</h2>
+    <table>
+      <tr><th></th><th>本機檔案</th><th>S3</th><th>AgentCore Browser profile</th><th>Chromium profile</th></tr>
+      <tr><td>跨機器</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+      <tr><td>localStorage</td><td>需 <code>restore_local_storage=True</code></td><td>同左</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>IndexedDB／快取</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>加密</td><td class="no">✗（0o600）</td><td class="yes">✓ SSE-KMS</td><td class="yes">✓ 服務代管</td><td class="no">✗</td></tr>
+    </table>
+    <div class="note">
+      <b>部署到雲端時，本機檔案和 Chromium profile 在容器重啟後就消失</b>
+      <p>實際上只能選 <b>S3 或 AgentCore Browser profile</b>。官方看法：大多數 OAuth／SAML 登入<b>只保存 cookie 就夠了</b>。Chromium profile 模式下平行執行時每個實例一定要各自複製一份。</p>
+    </div>
+    <div class="note">
+      <b>Linux 上沒有系統 keyring 時，Chromium 密碼管理器存的密碼是明文</b>
+      <p>容器環境通常沒有 keyring → 不要依賴 Chromium 的密碼管理器。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>文件小矛盾</h2>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>解析度範圍自相打架。</b>README 說最佳化 <code>864×1296</code>～<code>1536×2304</code>，但同一段的範例是 <code>screen_width=1920, screen_height=1080</code>，寬度已超出。而且範圍寫法看起來像直式畫面，與一般桌面瀏覽器的橫式不同 → <b>實際尺寸要自己實測</b>。</span></div>
+      <div class="row"><span class="a">!</span><span><b>套件名稱不一致。</b>使用者指南的 AgentCore 整合頁範例寫 <code>from nova_act_sdk import NovaAct</code>，實際套件是 <code>nova_act</code>。</span></div>
+      <div class="row"><span class="a">!</span><span><b><code>proxy</code> 接 CDP 端點時無效</b> —— 要在啟動瀏覽器的那一端設定。<code>use_default_chrome_browser</code> 只支援 macOS，而且會重新啟動你的 Chrome。</span></div>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>導入前的六個檢查</h2>
+    <ol>
+      <li><code>act_get</code> 的 <strong>schema 有沒有真的接上</strong>（沒有 schema 就拿不到資料）</li>
+      <li>每個 prompt 有<strong>寫清楚停在哪裡</strong>嗎；<strong>拆夠小</strong>了嗎（可靠性＋速度＋成本三個都受影響）</li>
+      <li>密碼、換頁、下載、對話框、上傳<strong>都改走 <code>nova.page</code></strong> 了嗎；填完密碼有<strong>立刻導向不回顯的頁面</strong>嗎</li>
+      <li><strong>有副作用的 act 有做安全重試嗎</strong>（送出前先 <code>act_get</code> 問狀態）—— 逾時重試可能執行兩次、收兩次費</li>
+      <li>用了 <code>@workflow</code> 又有<strong>多執行緒</strong>的話，<code>get_current_workflow()</code> 有手動傳進去嗎</li>
+      <li>雲端部署的登入狀態是<strong> S3 或 AgentCore Browser profile</strong> 嗎（容器重啟會 wipe 掉本機方案）</li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">nova-act/01-sdk/README.md</code>（PyPI <code>nova-act</code> 3.4.187.0，查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>

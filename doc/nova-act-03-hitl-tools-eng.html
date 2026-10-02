@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Act HITL 與工具 — ELI5 for Senior Engineers</title>
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141a26; --card2:#1b2333; --line:#263048;
+    --ink:#e8edf7; --dim:#8e9bb5; --accent:#6ea8fe; --warn:#ff6b6b;
+    --ok:#4ade80; --amber:#fbbf24; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.7;
+    font-family:ui-monospace,"SF Mono",Menlo,"Noto Sans TC",system-ui,sans-serif;
+    padding:48px 20px 88px; -webkit-font-smoothing:antialiased; font-size:15px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .badge{
+    display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:18px;
+  }
+  h1{font-size:clamp(24px,4.6vw,34px);line-height:1.25;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{color:var(--dim);margin-top:12px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px}
+  .card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .num{
+    display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:8px;
+    background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);
+  }
+  .lead{color:var(--dim);font-size:14px}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a8c7fa}
+  pre{
+    background:#0d1420;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.75;color:#a8c7fa;margin:0 0 12px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:600;font-size:12px}
+  td{padding:8px 8px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  td.yes{color:var(--ok)}
+  td.no{color:var(--warn)}
+  .stack{display:grid;gap:7px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;background:#0d1420;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .row span:last-child{color:var(--dim)}
+  .row b{color:var(--ink)}
+  .x{color:var(--warn);flex:none;font-weight:700}
+  .v{color:var(--ok);flex:none;font-weight:700}
+  .a{color:var(--amber);flex:none;font-weight:700}
+
+  .danger{border-color:#4a2028;background:linear-gradient(180deg,#1d1216,#141a26)}
+  .danger h2{color:var(--warn)}
+  .alert{background:#0d1420;border:1px solid #4a2028;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .alert b{color:var(--warn);display:block;margin-bottom:4px;font-size:14px}
+  .alert p{font-size:13.5px;color:var(--dim)}
+  .amber{border-color:#4a3a1a;background:linear-gradient(180deg,#1d1810,#141a26)}
+  .amber h2{color:var(--amber)}
+  .note{background:#0d1420;border:1px solid #4a3a1a;border-radius:10px;padding:14px 16px;margin-top:10px}
+  .note b{color:var(--amber);display:block;margin-bottom:4px;font-size:14px}
+  .note p{font-size:13.5px;color:var(--dim)}
+
+  .so-what{background:linear-gradient(135deg,#152036,#141a26);border-color:#2d3d5c}
+  .so-what ol{list-style:none;counter-reset:s}
+  .so-what li{counter-increment:s;display:flex;gap:12px;align-items:baseline;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .so-what li:last-child{border:0}
+  .so-what li::before{content:counter(s);color:var(--accent);font-weight:700;font-size:12px;flex:none}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:32px}
+  code.path{font-size:12px}
+</style>
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 22px;padding:9px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+  .nav a{color:var(--dim);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:#0d1420;white-space:nowrap}
+  .nav a:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+  .nav .cur{color:var(--ink);font-weight:600}
+  .nav .cur a{color:var(--accent);border:0;background:none;padding:0 0 0 8px;font-weight:400}
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">ELI5 · Senior Engineers · Amazon Nova Act</div>
+    <h1>要人核准 ≠ 有人會核准</h1>
+    <p class="sub">HITL 在機制上就是兩個內建工具 —— 所以「什麼時候找人」由模型判斷。不可逆的操作不該建立在這上面。</p>
+  </header>
+
+  <nav class="nav">
+    <a href="nova-act-02-deploy-operate-eng.html">&larr; NA 02 部署</a>
+    <span class="cur">NA 03 HITL<a href="index.html">目錄</a></span>
+    <a href="nova-act-04-agentcore-eng.html">NA 04 整合 &rarr;</a>
+  </nav>
+
+  <div class="card">
+    <h2><span class="num">1</span>HITL 兩種模式，性質完全不同</h2>
+    <table>
+      <tr><th></th><th>Human approval</th><th>UI takeover</th></tr>
+      <tr><td>真人做什麼</td><td>看截圖，按「核准／拒絕」或選一個選項</td><td>直接操作遠端瀏覽器</td></tr>
+      <tr><td>同步性</td><td>非同步：送出請求，等人回覆</td><td>即時：要有人在線</td></tr>
+      <tr><td>典型情境</td><td>費用／採購核准、送出前確認</td><td>CAPTCHA、登入、MFA／2FA</td></tr>
+      <tr><td>SDK 回呼</td><td><code>approve(message)</code></td><td><code>ui_takeover(message)</code></td></tr>
+    </table>
+    <div class="stack" style="margin-top:12px">
+      <div class="row"><span class="a">!</span><span>SDK <b>只給介面，不是代管服務</b>：你要自己實作 <code>HumanInputCallbacksBase</code> 的兩個方法。通知、審核頁、串流都要自己架。</span></div>
+      <div class="row"><span class="a">!</span><span>沒傳 <code>human_input_callbacks</code>，<b>模型就不會發出「請求人類輸入」的工具呼叫</b>。回呼只負責「怎麼找人、怎麼等」，不負責「要不要找」。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">後端類比：這很像 Step Functions 的 <code>waitForTaskToken</code> —— 流程停在某一步，等外部回呼才繼續。</p>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>「什麼時候找人」是模型決定的，不是你決定的</h2>
+    <div class="alert">
+      <b>HITL 就是 SDK 內建的兩個工具，觸發條件跟一般工具一樣由 prompt 控制</b>
+      <p>所以在 prompt 裡寫「Ask for approval before clicking submit」，模型<b>大致會</b>照做 —— 但這是機率性行為，不是保證。</p>
+    </div>
+    <div class="alert">
+      <b>付款、送出這類不可逆操作，不要只靠 prompt</b>
+      <p>在 Python 裡<b>硬拆成三段</b>：① <code>act()</code> 走到付款頁 → ② 程式呼叫自己的核准流程（確定性）→ ③ 拿到核准後才 <code>act()</code> 付款。這樣核准是程式邏輯，不是一次模型判斷。</p>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <div class="row"><span class="a">!</span><span>官方建議：<b>依情境設定逾時</b>（登入通常要給比 CAPTCHA 更久）；<b>被拒絕要能乾淨停下</b>；所有 HITL 互動<b>都要留紀錄</b>以便稽核。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>等真人不計 Nova Act 的錢，但運算平台照收</h2>
+    <div class="alert">
+      <b>agent hour 會扣掉 HITL 等待時間 —— 只有 Nova Act 這一層不計</b>
+      <p>容器與瀏覽器在等待期間<b>必須一直開著</b>（session 不能關），所以 Lambda 的 15 分鐘、AgentCore Runtime 的 8 小時上限<b>照樣適用</b>，運算平台的費用也照算。</p>
+    </div>
+    <div class="alert">
+      <b>長等待要設計成「可中斷」</b>
+      <p>參考實作的超時是 <code>HITL_EXECUTION_TIMEOUT=7200</code>（2 小時），遠超多數平台的執行上限。等待很久的流程應該考慮：存檔登入狀態 → 結束 session → 核准後重開。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>UI takeover：雲端只有一條路</h2>
+    <table>
+      <tr><th>瀏覽器在哪</th><th>真人怎麼接手</th></tr>
+      <tr><td>本機、有畫面（headed）</td><td>直接在螢幕上操作</td></tr>
+      <tr><td>headless</td><td>開 <code>--remote-debugging-port</code>，把 <code>devtoolsFrontendUrl</code> 傳給真人（遠端主機要另外 port forwarding）</td></tr>
+      <tr><td>AgentCore Browser</td><td>AgentCore Console 的 Live View，或 HIS 的 <b>DCV 串流</b>（只傳加密後的畫面像素）</td></tr>
+    </table>
+    <div class="alert">
+      <b>暴露 CDP 除錯埠，等於把瀏覽器的完整控制權交出去</b>
+      <p>那條路只適合本機除錯。正式環境的 UI takeover 實際上只能走 <b>AgentCore Browser + DCV</b>。</p>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <h2><span class="num" style="color:var(--amber)">!</span>「Managed」其實要你自己部署、自己維運</h2>
+    <p class="lead">使用者指南把 Human Intervention Service 列為「Option 1：<b>Managed</b> Human Intervention Service（Recommended）」，但它是跑在你自己帳號裡的 CDK 專案：</p>
+    <pre>Nova Act workflow ──(client SDK, WebSocket)──▶ API Gateway WebSocket
+                                                    │
+                                              Step Functions（生命週期、每 30 秒輪詢、逾時）
+                                               │            │            │
+                                            DynamoDB     S3（截圖 KMS   Slack / SES Email
+                                          （狀態，TTL     加密，1 天後     （附審核頁連結）
+                                            24 小時）      刪除）
+                                                            │
+                                               CloudFront 單頁審核介面（approve）
+                                               DCV Web Client 串流瀏覽器（UI takeover）</pre>
+    <div class="stack">
+      <div class="row"><span class="v">✓</span><span>client SDK 透過 WebSocket <b>阻塞等待</b>真人完成，並附 Supervisor dashboard（待處理請求、歷史紀錄、處理時間）。</span></div>
+      <div class="row"><span class="a">!</span><span><b>文件矛盾：</b>同一頁先說「HITL 要自己實作、<b>不是代管的 AWS 服務</b>」，又把 HIS 稱為「<b>Managed</b>」。「Managed」指的是「幫你寫好了」，不是有人幫你維護。</span></div>
+      <div class="row"><span class="x">✗</span><span>README 建議「用 <b>AWS Administrator 權限</b>跑 pattern 比較簡單」—— 正式環境請改用部署時產生的 <code>NovaAct-HITL-AssumeExecutionRole-*</code> 最小權限 policy。</span></div>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h2><span class="num" style="color:var(--warn)">!</span>工具是 Preview：本地函式好寫，MCP 要借 Strands</h2>
+    <pre><span style="color:var(--dim)"># 本地工具：@tool 裝飾普通 Python 函式</span>
+@tool
+def read_row_as_dict(file_path: str, row_number: int) -> dict:
+    """Reads a specific row from an Excel file and returns it as a dict.
+    Args:  file_path (str) / row_number (int, 1-based)
+    Returns: dict — column header -&gt; value
+    """
+...</pre>
+    <div class="stack">
+      <div class="row"><span class="a">!</span><span><b>docstring 就是給模型看的說明書</b> —— 描述、參數、回傳型別要寫清楚。寫得爛，模型就選錯工具。</span></div>
+      <div class="row"><span class="a">!</span><span>服務端上限：每個 act 最多 <b>100 個工具</b>、tool spec 總大小 <b>350 KB</b>。但官方建議<b>越少越好</b>，工具多了模型會選錯。</span></div>
+      <div class="row"><span class="a">!</span><span>要直接操作瀏覽器的工具設 <code>requires_unlocked_actuator_context = True</code> —— SDK 會在執行期間<b>暫停自己對瀏覽器的控制</b>（HITL 就是這樣運作的）。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>MCP 要借用 Strands 的 <code>MCPClient</code></b>，所以必須安裝 <code>strands-agents</code>。官方說支援 remote MCP，<b>官方範例用的卻是本機 stdio server</b> —— 遠端 MCP 要自己接。</span></div>
+      <div class="row"><span class="x">✗</span><span>不需要瀏覽器時，要在 prompt <b>明寫</b>「Ignore the web browser; do not click, scroll, type」，否則模型可能還是去操作網頁。</span></div>
+    </div>
+    <p class="lead" style="margin-top:12px">Tool use <b>還是 Preview，正式環境不要依賴它</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>反過來：把 Nova Act 當成 Strands 的一個工具</h2>
+    <pre><span style="color:var(--dim)"># Strands 當大腦，Nova Act 當工具</span>
+@tool
+def browser_automation_tool(starting_url: str, instr: str) -> str:
+    with NovaAct(starting_page=starting_url) as browser:
+        return str(browser.act_get(instr, max_steps=10).response)
+
+agent = Agent(tools=[browser_automation_tool])  <span style="color:var(--dim)"># Strands 用 Bedrock 通用模型</span></pre>
+    <div class="stack">
+      <div class="row"><span class="v">✓</span><span><b>分工：</b>Strands 的 LLM 負責規劃推理（去哪個網站、做什麼），Nova Act 負責在網頁上把事情做完。</span></div>
+      <div class="row"><span class="a">!</span><span><b>執行位置：</b>Nova Act SDK 跟 Strands agent <b>跑在同一台機器、同一個容器裡</b>。瀏覽器要不要放到 AgentCore Browser，要自己在工具內設定。</span></div>
+      <div class="row"><span class="x">✗</span><span><b>成本是兩份：</b>Strands 那層 LLM 按 token 計，Nova Act 那層按 agent hour 計。上層 LLM 可能反覆呼叫工具，所以<b>一定要設 <code>max_steps</code> 上限</b>（範例是 10）。</span></div>
+      <div class="row"><span class="v">✓</span><span>官方範例把例外吃掉、回傳錯誤字串，讓<b>上層 LLM 自己決定</b>要重試還是換做法。</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>三種架構怎麼選</h2>
+    <table>
+      <tr><th>架構</th><th>誰是大腦</th><th>適合</th></tr>
+      <tr><td>純 Nova Act workflow</td><td>Python ＋ Nova Act 模型</td><td>流程固定、以網頁操作為主（填單、擷取、QA）</td></tr>
+      <tr><td>Nova Act ＋ 工具（Preview）</td><td>Nova Act 模型</td><td>網頁流程中需要少量外部資料（查 Excel、查 API）</td></tr>
+      <tr><td>Strands ＋ Nova Act 當工具</td><td>通用 LLM</td><td>需要跨系統推理，網頁只是其中一個步驟</td></tr>
+    </table>
+    <div class="alert" style="border-color:#4a3a1a">
+      <b style="color:var(--amber)">分界線：Nova Act 的強項是「看畫面、操作 UI」</b>
+      <p>需要大量工具編排的推理（查 A、比對 B、決定 C）交給通用 LLM 的 agent，再把 Nova Act 當成它的一個工具。<b>多加一層 LLM 是換來推理能力，代價是兩份成本。</b></p>
+    </div>
+  </div>
+
+  <div class="card so-what">
+    <h2><span class="num">→</span>動工前的五個檢查</h2>
+    <ol>
+      <li><strong>不可逆操作是不是只靠 prompt 叫模型核准</strong> —— 應該在 Python 裡拆成確定性流程</li>
+      <li><strong>等待真人時段有沒有算進平台的執行上限</strong> —— Nova Act 不收費，Lambda 15 分鐘照樣砍</li>
+      <li><strong>UI takeover 在正式環境走哪條路</strong> —— 只能是 AgentCore Browser ＋ DCV，不能開 CDP</li>
+      <li><strong>HIS 是用 Administrator 權限部署的嗎</strong> —— 換成 AssumeExecutionRole 最小權限</li>
+      <li><strong>加了上層 LLM 嗎</strong> —— 那是兩份成本，而且工具要自己設 <code>max_steps</code></li>
+    </ol>
+  </div>
+
+  <footer>
+    完整細節：<code class="path">nova-act/03-hitl-tools/README.md</code>（查核 2026-09-30）
+  </footer>
+
+</div>
+</body>
+</html>
