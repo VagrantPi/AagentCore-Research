@@ -178,3 +178,24 @@ execution role 不給 Browser 權限；Gateway + Policy 為選配，需要時才
 | USAGE_LOGS 可以分攤每位使用者的成本 | `[官方已寫]`；WP0 已實證可依 session 分攤 | WP0、WP5 |
 
 相關研究庫篇章：[01 Runtime](../01-runtime/)、[03 Gateway](../03-gateway/)、[05 內建工具](../05-built-in-tools/)、[08 Policy](../08-policy/)、[02 Memory](../02-memory/)、[06 Observability](../06-observability/)、[00 Harness vs Runtime](../00-overview/harness-vs-runtime.md)、[00 自建 vs 採用](../00-overview/build-vs-buy.md)。
+
+## 評估過、不採用
+
+| 方案 | 評估日期 | 結論 | 不採用的原因 |
+|---|---|---|---|
+| [ego (lite)](https://lite.ego.app/document/en/docs/quick-start) 取代 AgentCore Browser | 2026-10-02 | 不採用 | 見下方 |
+
+### ego (lite)
+
+macOS 本機的 Chromium 瀏覽器，agent 透過 `ego-browser` 命令列工具執行 Node.js 腳本控制它，主打沿用使用者真實的 Chrome 登入狀態。個人版免費；`ego-browser` 與 skill 為 MIT 授權。
+
+不採用的原因（依官方文件，未實測）：
+
+1. **不能放在伺服器端：** 只有 macOS 圖形介面 app，Windows、Linux 還在規劃中，沒有無介面版本。雲端用 Mac 機器（EC2 Mac）是專屬主機，有最少 24 小時的租用期，每人一台不可行。
+2. **無法做到使用者之間的隔離：** 所有 Space 跑在同一個瀏覽器程序裡，一台機器服務多位使用者等於共用環境。
+3. **行為不可控：** 官方明講「ego (lite) does not decide which tasks your agent may run」；文件沒有網域白名單、政策或稽核紀錄。控制介面是任意 Node 腳本，加上 `js()`、`cdp()`、`httpGet()`。
+4. **遠端 agent 需要自建 bridge：** 雲端 agent 要控制使用者 Mac 上的 ego (lite)，必須在那台 Mac 上裝一個常駐程式代為執行。可控性（固定指令集、網域檢查、簽章指令、稽核）全部要自己寫。
+5. **影響範圍大：** agent 可以動到使用者所有已登入的真實帳號，prompt injection 的後果比隔離的雲端瀏覽器嚴重。
+6. **手機無法接手：** 接手要坐在那台 Mac 前面打開 Space，不符合聊天 App 以手機為主的情境。
+
+日後若產品要做「Mac 桌面版使用者讓 agent 用自己的電腦與帳號」，再重新評估。屆時先實測：Space 之間與使用者分頁之間是否共享登入狀態（產品介紹頁與 Space 頁說法矛盾）、能否把 agent 限制在專用 profile、只開放固定指令時能否完成技能流程、本機有無遙測、商業整合的授權條款。
