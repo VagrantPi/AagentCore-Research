@@ -31,6 +31,33 @@ def try_https(url):
         return f"fail {type(e).__name__}"
 
 
+def try_mmds_token():
+    req = urllib.request.Request("http://169.254.169.254/latest/api/token", method="PUT",
+                                 headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            return f"ok {r.status} (token 長度 {len(r.read())})"
+    except urllib.error.HTTPError as e:
+        return f"ok(http {e.code})"
+    except Exception as e:
+        return f"fail {type(e).__name__}"
+
+
+def try_mmds_creds():
+    """用 MMDSv2 token 讀 execution role 的憑證；只回報有沒有 AccessKeyId，不印出內容。"""
+    base = "http://169.254.169.254/latest"
+    try:
+        req = urllib.request.Request(f"{base}/api/token", method="PUT", headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"})
+        token = urllib.request.urlopen(req, timeout=TIMEOUT).read().decode()
+        hdr = {"X-aws-ec2-metadata-token": token}
+        get = lambda path: urllib.request.urlopen(urllib.request.Request(f"{base}{path}", headers=hdr), timeout=TIMEOUT).read().decode()
+        role = get("/meta-data/iam/security-credentials/").split()[0]
+        creds = json.loads(get(f"/meta-data/iam/security-credentials/{role}"))
+        return f"ok role={role} AccessKeyId={'有' if creds.get('AccessKeyId') else '無'} 到期={creds.get('Expiration')}"
+    except Exception as e:
+        return f"fail {type(e).__name__}"
+
+
 def try_cmd(cmd):
     try:
         p = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
@@ -40,7 +67,7 @@ def try_cmd(cmd):
 
 
 def main():
-    region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+    region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "ap-northeast-1"  # 沙箱裡沒有設 AWS_REGION，預設用實驗所在的東京
     results = {
         "dns: pypi.org": try_dns("pypi.org"),
         f"dns: s3.{region}.amazonaws.com": try_dns(f"s3.{region}.amazonaws.com"),
@@ -48,11 +75,17 @@ def main():
         "https: example.com": try_https("https://example.com/"),
         f"https: s3.{region}": try_https(f"https://s3.{region}.amazonaws.com/"),
         f"https: sts.{region}": try_https(f"https://sts.{region}.amazonaws.com/"),
+        "https: s3.amazonaws.com（全域端點）": try_https("https://s3.amazonaws.com/"),
+        # 別人的 bucket（虛擬主機寫法）：通的話，沙箱可以把資料寫到任何人開放寫入的 bucket
+        "https: 他人 bucket 主機": try_https("https://wp3-probe-nonexistent-bucket-7f3a.s3.amazonaws.com/"),
         # 憑證從哪裡來：環境變數？metadata 端點？（只檢查是否存在，不印出內容）
         "env: AWS_ACCESS_KEY_ID set": str(bool(os.environ.get("AWS_ACCESS_KEY_ID"))),
         "env: AWS_CONTAINER_CREDENTIALS_FULL_URI set": str(bool(os.environ.get("AWS_CONTAINER_CREDENTIALS_FULL_URI"))),
         # 官方說明：execution role 的憑證透過 MMDS（同 EC2 的 169.254.169.254）提供，沙箱裡的任何程式都讀得到
         "http: 169.254.169.254 (MMDS)": try_https("http://169.254.169.254/latest/meta-data/"),
+        # 不帶 token 被拒、拿得到 token → MMDSv2 有強制
+        "http: MMDSv2 token": try_mmds_token(),
+        "mmds: 讀得到憑證": try_mmds_creds(),
         "cmd: aws sts get-caller-identity": try_cmd("aws sts get-caller-identity --query Arn --output text"),
         "cmd: pip download (不安裝)": try_cmd("pip download --disable-pip-version-check --no-deps -d /tmp/p six -q"),
         "disk: / free (GB)": try_cmd("df -k / | tail -1 | awk '{printf \"%.1f\", $4/1048576}'"),

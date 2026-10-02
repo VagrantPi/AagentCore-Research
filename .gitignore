@@ -4,3 +4,7 @@ __pycache__/
 
 # 獨立的 git repo（Claude skill），與本研究無關
 ELI5/
+
+# Claude Code 本機檔案（worktree、個人設定）
+.claude/worktrees/
+.claude/settings.local.json

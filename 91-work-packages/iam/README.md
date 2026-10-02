@@ -9,6 +9,7 @@
 | [`scp.json`](scp.json) | AWS Organizations，套在實驗帳號上 | 只能用選定的區域、禁止開 EC2、禁止建 IAM user 與長期 key。連帳號管理員都無法越過 |
 | [`permission-set.json`](permission-set.json) | IAM Identity Center 的 permission set | 同事實際拿到的權限；最後一段 Deny 保護 boundary 不被拆掉 |
 | [`wp-boundary.json`](wp-boundary.json) | 建成名為 `wp-boundary` 的 managed policy | 同事建的每個角色都必須掛上它，權限上限就是它允許的範圍，防止「自己建大權限角色再 assume」 |
+| [`wp0-owner-policy.json`](wp0-owner-policy.json) | **已套用**：IAM user `KaisLinCli` 的 inline policy `wp0-account-owner` | A 做 WP0、WP3、WP5、WP1 用的臨時權限（AgentCore 限東京、`USAGE_LOGS` 投遞）。WP1 結束時移除 |
 
 ## 四層設計
 
