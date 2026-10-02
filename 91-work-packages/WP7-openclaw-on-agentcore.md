@@ -1,8 +1,8 @@
-# WP7 OpenClaw on AgentCore 官方範例實跑（選配）
+# WP7 OpenClaw on AgentCore 官方範例實跑
 
 > 回答：方案 A（OpenClaw 跑在 AgentCore Runtime）的真實延遲和成本是多少？拿來當 WP1（方案 B）和 WP6（方案 C）的對照組。
 >
-> 人日：1。前置：WP0。選配：人力不夠時可以略過，決策矩陣的方案 A 欄用官方範例 README 的數字並標「未實測」。
+> 估點：3。優先序：7（風險低、價值低）。前置：WP0、WP3 建好的不開 NAT VPC（能力邊界測試用）。分群：A。
 
 ## 目標
 
