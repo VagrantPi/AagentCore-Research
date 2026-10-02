@@ -1,6 +1,6 @@
 # 實驗：Runtime 冷啟動與 session 建立速率
 
-> 狀態：**實驗工具已完成，尚未在 AWS 上實跑。** 撰寫時的環境沒有 AWS 憑證，下方的結果表是空的，跑完後再補上。**將由 [WP1](../../../91-work-packages/WP1-runtime-session.md) 實跑，結果回填到本檔。**
+> 狀態：**PUBLIC 組合已在東京實跑（2026-10-02，[WP1](../../../91-work-packages/WP1-runtime-session.md)）。** VPC 組、zip 尚未跑。
 >
 > 本機已驗證的部分：agent 直接執行與 container 執行都正常（arm64、`/ping`、`/invocations`）；`bench.py` 的 deploy / measure / cleanup 流程，以及 MMDSv2 補開的分支，都用 botocore Stubber 對照真實的 service model 測試過。
 
@@ -49,8 +49,14 @@ python bench.py deploy --role-arn <role> --image <ecr>:small \
   --big-image <ecr>:big --bucket <bucket> \
   --subnets subnet-a,subnet-b --security-groups sg-x               # 會記錄每個變體等到 READY 花了多久（V2 應該要好幾分鐘）
 python bench.py measure --role-arn <role> --trials 20              # 結果會追加到 results.csv
-python bench.py burst --variant cs_v1_img_pub --sessions 60 --concurrency 30
-python bench.py burst --variant cs_v1_zip_pub --sessions 60 --concurrency 30
+python bench.py burst --variant wp1_cs_v1_img_pub --sessions 60 --concurrency 30
+python bench.py burst --variant wp1_cs_v1_zip_pub --sessions 60 --concurrency 30
+python bench.py concurrent --variants wp1_cs_v1_img_pub,wp1_cs_v1_img_pub_blk   # 需 deploy --blocking；結果寫入 concurrent.csv
+python bench.py prewarm --variants wp1_cs_v1_img_pub,wp1_cs_v2_img_pub         # 結果寫入 prewarm.csv
+python bench.py deploy ... --busy --image <ecr>:busy                               # 處理中 /ping 回 HealthyBusy 的對照組
+python bench.py concurrent --variants wp1_cs_v1_img_pub_busy --n 1 --sleep 180 --trials 1   # 長請求
+python storage.py run --role-arn <role> --image <ecr>:ss --owner <人>            # session storage（#5、#6），結果寫入 storage.csv
+python storage.py cleanup                                                         # 先刪 endpoint，再跑 bench.py cleanup
 python bench.py cleanup
 ```
 
@@ -67,21 +73,74 @@ python bench.py cleanup
 
 ## 結果
 
-> 待實測後補上。
+> 2026-10-02，東京，boto3 1.43.107。呼叫端是台灣的筆電，**不是同區域**，所以 warm 的約 190 ms 大多是網路來回；V1 與 V2 的差距不受影響。原始資料：`results.csv`、`concurrent.csv`、`prewarm.csv`、`burst.csv`、`storage.csv`。
 
 | 變體 | n | cold p50 (ms) | cold p90 (ms) | warm p50 (ms) | 不重複的 boot_token 數 | 等待 READY 的時間 (s) |
 |------|---|---------------|---------------|---------------|-----------------------|----------------------|
-| cs_v1_img_pub | | | | | | |
-| cs_v2_img_pub | | | | | | |
-| … | | | | | | |
+| wp1_cs_v1_img_pub | 20 | 561 | 673 | 190 | 20/20 | 0.2 |
+| wp1_cs_v2_img_pub | 20 | 1898 | 2313 | 217 | 2/20 | 183 |
+| wp1_cs_v1_bigimg_pub | 20 | 559 | 616 | 192 | 20/20 | 0.1 |
+| wp1_cs_v2_bigimg_pub | 20 | 1861 | 2260 | 191 | 1/20 | 203 |
 
-| burst 變體 | 送出 | 成功 | 被 throttle | 實際速率 (/s) |
-|-----------|------|------|-------------|---------------|
-| cs_v1_img_pub | | | | |
-| cs_v1_zip_pub | | | | |
+**V1 的 cold 不是真的冷啟動。** 40 次 V1 試驗都是該 process 的第一個請求，但 `boot_age_s` 的中位數是 36 秒（small）與 97 秒（big）：process 在請求到之前就已經啟動。V1 是從預先開好的實例池（約 15 台）分配 VM，所以 image 大小在這裡看不出影響。池子用光後的真冷啟動見下方 burst：small 約 3.6 s，1 GB 約 17.8 s。
 
-## 可以順便驗證的：更新版本時 session storage 會不會被清空
+**池子裡的 V2 比 V1 慢約 1.3 秒；池子用光後 V2 反而快很多。** V2 是從 snapshot 還原：`boot_age_s` 約 608 秒（等於建 snapshot 的時間點），同一個 runtime 的 session 幾乎都拿到同一個 `boot_token`（small 20 次裡 19 次、big 20 次全部），證實啟動階段產生的亂數會在不同 session 之間重複。
 
-這題與 [coding agent 架構](../../coding-agent-architecture.md)相關。官方文件寫「更新 runtime 版本時，session storage 會被清空」，但**沒有說明「prod endpoint 仍然指向舊版本」的情況會怎麼樣**。
+**MMDSv2：** 新建的 runtime 預設就是 `requireMMDSV2: true`，measure 沒有觸發補開的分支。`GetAgentRuntime` 不回傳 `platformVersion`（V2 也是 `null`），只能從行為判斷版本。
 
-驗證方式：手動替其中一個變體加上 `filesystemConfigurations=[{"sessionStorage": {"mountPath": "/mnt/ws"}}]`，建立一個固定指向 V1 的 endpoint，寫入檔案，然後更新 runtime（產生 V2），再透過固定的那個 endpoint 恢復原本的 session，看檔案還在不在。這需要改寫 agent，讓它能讀寫檔案，目前不在 `bench.py` 的範圍內。
+並行測試（`concurrent`，同一個 session 同時送 3 個各睡 20 秒的請求，每個變體 3 次）：
+
+| 變體 | 結果 | 3 個請求的延遲 | 同一台 VM | `/ping` 期間 |
+|------|------|---------------|-----------|-------------|
+| wp1_cs_v1_img_pub（多執行緒） | 9/9 成功，沒有 409 | 都是 20.2–20.3 s，真的並行 | 是 | 每個請求期間收到 10 次（約 2 秒一次） |
+| wp1_cs_v2_img_pub（多執行緒） | 9/9 成功，沒有 409 | 都是 20.2 s | 是 | 10 次 |
+| wp1_cs_v1_img_pub_blk（單執行緒） | 9/9 成功 | 20 / 40 / 60 s，被排隊 | 2/3 次是；1 次第 3 個請求花 87 s，落在另一個 boot_token | 0 次（被卡住） |
+
+長請求（同一個 session 送 1 個睡 180 秒的請求；這批 runtime 的閒置逾時是 60 秒，各 1 次）：
+
+| 變體 | `/ping` 回什麼 | 結果 |
+|------|---------------|------|
+| wp1_cs_v1_img_pub_blk（單執行緒） | 被卡住 | 156.7 s 收到 `RuntimeClientError`，session 被終止 |
+| wp1_cs_v1_img_pub（多執行緒） | `Healthy` | 246.8 s 收到 `RuntimeClientError`，session 被終止（前一次也被終止） |
+| wp1_cs_v1_img_pub_busy（多執行緒，`PING_BUSY=1`） | 處理中回 `HealthyBusy` | 180.2 s 成功，期間 90 次 `/ping` |
+
+**請求一旦超過閒置逾時，只有 `HealthyBusy` 能保住 session。** `/ping` 沒被卡、照常回 `Healthy` 也一樣會被當成閒置砍掉。正式環境的閒置逾時預設 15 分鐘，所以超過 15 分鐘的請求一定要回 `HealthyBusy`。
+
+預喚醒（`prewarm`，先送 `{}` 不等回應，3 秒後送真正的請求，每個變體 20 次）：
+
+| 變體 | 真正請求 p50 (ms) | p90 (ms) | 預喚醒請求 p50 (ms) |
+|------|------------------|----------|---------------------|
+| wp1_cs_v1_img_pub | 170 | 198 | 535 |
+| wp1_cs_v2_img_pub | 196 | 231 | 1808 |
+| wp1_cs_v1_bigimg_pub | 177 | 206 | 590 |
+| wp1_cs_v2_bigimg_pub | 191 | 211 | 1772 |
+
+80 次全部落在預喚醒開的同一台 VM，真正請求的延遲等於 warm。
+
+Burst（同時送出 N 個新 session，SDK 不重試；`boot_age_s` 小於 5 秒算真冷啟動，其餘算來自池子；原始資料 `burst.csv`）：
+
+| burst 變體 | 送出 | 成功 | 被 throttle | 實際速率 (/s) | 池子 n / p50 | 真冷啟動 n / p50 / p90 |
+|-----------|------|------|-------------|---------------|-------------|------------------------|
+| wp1_cs_v1_img_pub | 30 | 30 | 0 | 8.2 | 15 / 745 ms | 15 / 3617 ms / 3658 ms |
+| wp1_cs_v1_img_pub | 100 | 100 | 0 | 17.0 | 15 / 722 ms | 85 / 3762 ms / 4177 ms |
+| wp1_cs_v1_bigimg_pub | 60 | 60 | 0 | 3.3 | 15 / 1172 ms | 45 / 17828 ms / 17888 ms |
+| wp1_cs_v2_img_pub | 30 | 30 | 0 | 12.4 | 30 / 1922 ms | 0 |
+| wp1_cs_v2_bigimg_pub | 60 | 60 | 0 | 20.4 | 60 / 2130 ms | 0 |
+
+- 100 個新 session 在約 1 秒內送出，0 次 throttle：1.6/s 的說法不成立；25/s 是持續速率還是上限，這個規模分辨不出來。
+- 「實際速率」是成功數除以總耗時，被真冷啟動拖慢，不是平台限流。
+- V2 一律從 snapshot 還原，不論並發量或 image 大小都在 2 秒左右。
+
+## 更新版本時 session storage 會不會被清空（WP1 #5、#6）
+
+用 `storage.py` 跑（runtime `wp1_ss_v1_img_pub`，掛 `sessionStorage` 在 `/mnt/ws`，閒置逾時 60 秒；用環境變數 `AGENT_VERSION` 產生新版本）。原始資料 `storage.csv`。
+
+| 測試 | 操作 | 記憶體 | session storage 的檔案 |
+|------|------|--------|-----------------------|
+| idle | 寫入後 30 秒再呼叫 | 還在 | 還在 |
+| idle | 寫入後 90 秒（超過閒置逾時）再呼叫 | 消失（新 VM） | 還在 |
+| stop | 寫入 → `StopRuntimeSession` → 再呼叫 | 消失 | 還在 |
+| update | 寫入 → 停止 → 更新到 version 2 → 透過 DEFAULT 再呼叫 | 消失 | **清空** |
+| pinned | endpoint 固定指向 version 2 → 寫入 → 停止 → 更新到 version 3 → 透過固定 endpoint 再呼叫 | 消失 | **還在**，請求仍跑在 version 2 |
+
+**結論：** 清空與否看「恢復 session 時用的版本」有沒有變，不是看 runtime 有沒有更新。用固定版本的 endpoint 部署，就可以在更新 runtime 時保住使用者的工作區。
