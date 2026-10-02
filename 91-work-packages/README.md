@@ -60,14 +60,14 @@
 | 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死 | 高 | 高 | 3 | WP0、WP2 的 Gateway | B | | ⬜ |
 | 3 | [WP5](WP5-user-state-isolation.md) | 使用者狀態與隔離、每使用者成本 | 資料不外洩、每人成本算得出來 | 高 | 高 | 5 | WP0、一個最小的 Runtime（WP1 步驟 1） | A | | ⬜ |
 | 4 | [WP1](WP1-runtime-session.md) | Runtime 冷啟動與「一人一實體」 | microVM 撐不撐得住對話體驗？V2 值不值得？ | 中 | 高 | 5 | WP0 | A | | ⬜ |
-| 5 | [WP4](WP4-browser-takeover.md) | Browser 接手登入 | Muse 式的接手流程能不能在 AgentCore 做出來 | 中 | 中 | 8 | WP0 | B | | ⬜ |
+| ~~5~~ | ~~[WP4](WP4-browser-takeover.md)~~ | ~~Browser 接手登入~~ | ~~Muse 式的接手流程能不能在 AgentCore 做出來~~ | ~~中~~ | ~~中~~ | ~~8~~ | ~~WP0~~ | — | 其他工程師 | ✅ 已由其他工程師完成 |
 | 6 | [WP6](WP6-oss-alternatives.md) | 不用 AgentCore 的開源方案 | 自架的真實成本與缺口 | 低 | 中 | A 半 5、B 半 5 | — | A、B 各半 | | ⬜ |
 | 7 | [WP7](WP7-openclaw-on-agentcore.md) | OpenClaw on AgentCore 官方範例實跑 | 方案 A 的真實數字，當對照組 | 低 | 低 | 3 | WP0、WP3 的 VPC | A | | ⬜ |
 
 - **WP0 不參與排序**：它是所有 WP 拉帳單的前提。Cost Explorer 的 tag 啟用後約 24 小時才出現數據，所以要最先做。
 - **前三名都是「高風險、高價值」**：分別對應產品的兩個核心承諾（只能用買到的技能、資料不外洩）。任何一個被否定，方案 B 就要大改。
 - **WP1 排在 WP5 後面**：冷啟動慢或並行會卡，都有已知替代（預喚醒、V2、一個聊天室一個 session）；資料外洩沒有。
-- **WP4 是功能層級**：否定的結果是「這個功能改做法或延後」，不影響整體架構。
+- ~~**WP4 是功能層級**：否定的結果是「這個功能改做法或延後」，不影響整體架構。~~ WP4 已由其他工程師完成，不列入本次分工；結果請回填到 [WP4 檔案](WP4-browser-takeover.md)的「回填」區。
 - 每位同事都有 AI 輔助，各 WP 都標了既有的腳本和研究庫段落，可以直接餵給 AI 當起點。
 
 ## 兩人分工
@@ -76,11 +76,11 @@
 
 | | A：執行環境、狀態、成本 | B：能力邊界、使用者互動 |
 |---|---|---|
-| 回答的問題 | 資料會不會外洩、「一人一實體」跑不跑得動、每人每月花多少、OpenClaw 的對照數字 | 「只能用買到的技能」守不守得住、使用者能不能接手登入 |
-| 負責的 WP（依優先序） | WP0（前置）→ WP5 → WP1 → WP6 前半 → WP7 | WP2 → WP3 → WP4 → WP6 後半 |
+| 回答的問題 | 資料會不會外洩、「一人一實體」跑不跑得動、每人每月花多少、OpenClaw 的對照數字 | 「只能用買到的技能」守不守得住、~~使用者能不能接手登入~~ |
+| 負責的 WP（依優先序） | WP0（前置）→ WP5 → WP1 → WP6 前半 → WP7 | WP2 → WP3 → ~~WP4~~ → WP6 後半 |
 | WP6 負責的層 | 第 1 層隔離執行環境、第 5 層記憶、第 6 層可觀測與成本 | 第 2 層 agent 框架與技能、第 3 層工具閘道與授權、第 4 層雲端瀏覽器 |
-| 主要碰的 AWS 服務 | Runtime、Memory、STS、CloudWatch、Cost Explorer | Gateway、Policy、Harness、Code Interpreter、Browser、VPC |
-| 估點合計 | 2 + 5 + 5 + 5 + 3 = 20 | 5 + 3 + 8 + 5 = 21 |
+| 主要碰的 AWS 服務 | Runtime、Memory、STS、CloudWatch、Cost Explorer | Gateway、Policy、Harness、Code Interpreter、VPC |
+| 估點合計 | 2 + 5 + 5 + 5 + 3 = 20 | 5 + 3 + ~~8~~ + 5 = 13 |
 
 ### 共用資源：只建一次
 
@@ -92,7 +92,7 @@
 | 最小的 Runtime（WP1 步驟 1） | A，WP5 開始前先部署 | WP5 測 VM 內的憑證；之後 WP1 繼續用 |
 | 區域 | 兩人開工前一起選定 | 必須是 V2 有支援的區域（例如 us-west-2 或東京） |
 
-跨群要交接的數字：B 把 WP4 的 Browser 每次 session 費用交給 A，放進 WP5 的「每位使用者月費」；A 把 WP1 的冷啟動數字交給 B，當 WP6 比較開源方案的基準；B 把 WP2、WP3 的能力邊界結論交給 A，當 WP7 判斷 OpenClaw 能否收緊的標準。
+跨群要交接的數字：WP4 的 Browser 每次 session 費用改從其他工程師的結果取得，由 A 放進 WP5 的「每位使用者月費」；A 把 WP1 的冷啟動數字交給 B，當 WP6 比較開源方案的基準；B 把 WP2、WP3 的能力邊界結論交給 A，當 WP7 判斷 OpenClaw 能否收緊的標準。
 
 ### 每個 WP 先做的檢核點
 
@@ -104,7 +104,7 @@
 | WP3 | #1 Sandbox 連外、#3 VPC 無 NAT、#4 憑證可讀性 | #5、#7、#2、#6 |
 | WP5 | #1 actorId 的 IAM、#3 範圍縮小的臨時憑證、#4 VM 自己 AssumeRole 能否繞過、#2 reflection 跨使用者 | #8、#7、#6、#5、#9 |
 | WP1 | #8 單 session 並行、#1 V1 冷啟動、#7 預喚醒 | #2、#3、#4、#5、#6a、#6b、#11、#9、#10 |
-| WP4 | #1 Live View、#2 接手期間 agent 端行為、#4 交還後繼續、#5b profile 的 IAM 隔離 | #5a、#3、#8、#6、#10、#7、#9 |
+| ~~WP4~~ | ~~#1 Live View、#2 接手期間 agent 端行為、#4 交還後繼續、#5b profile 的 IAM 隔離~~ | ~~#5a、#3、#8、#6、#10、#7、#9~~（已由其他工程師完成） |
 | WP6 | 每層「有 / 沒有 / 要自己做」，特別是 #6 框架外強制白名單、#7 接手登入 | #2、#3、#5、#4、#8 |
 | WP7 | #5 預設能不能做範圍外的事、#6 VPC 無 NAT 能否運作 | #1、#2、#3、#4 |
 
