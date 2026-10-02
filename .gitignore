@@ -9,3 +9,6 @@ ELI5/
 # Claude Code 本機檔案（worktree、個人設定）
 .claude/worktrees/
 .claude/settings.local.json
+
+# 本機 issue 檔（不進版控）
+.scratch/
