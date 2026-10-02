@@ -56,9 +56,9 @@
 
 | 優先序 | 編號 | 題目 | 回答的選型問題 | 風險 | 價值 | 估點 | 前置 | 分群 | 負責人 | 狀態 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 前置 | [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的費用怎麼估算 | — | 前置 | 2 | — | A | Kais | 🟡 Runtime 已部署，等 `USAGE_LOGS` 驗證 |
+| 前置 | [WP0](WP0-cost-baseline.md) | 成本量測基礎 | 之後每包的費用怎麼估算 | — | 前置 | 2 | — | A | Kais | ✅ 完成（2026-10-02） |
 | 1 | [WP2](WP2-capability-boundary.md) | 能力邊界：自家 MCP server 依技能授權 | 「只能用買到的技能」能不能由自家 MCP server 強制、agent 繞不過；Browser 包成自家工具可不可行；還要不要 Gateway | 高 | 高 | 8 | WP0、自家 MCP server 測試執行個體 | B | RomanChen | ⬜ |
-| 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死；不能上網時仍連得到自家 MCP server | 高 | 高 | A 半 2、B 半 3 | A 半：WP0；B 半：WP0、WP2 的自家 MCP server 測試執行個體 | A、B 各半 | Kais、RomanChen | ⬜ |
+| 2 | [WP3](WP3-sandbox-egress.md) | 沙箱連外 | 「agent 能寫程式但不能上網」擋不擋得死；不能上網時仍連得到自家 MCP server | 高 | 高 | A 半 2、B 半 3 | A 半：WP0；B 半：WP0、WP2 的自家 MCP server 測試執行個體 | A、B 各半 | Kais、RomanChen | 🟡 A 半完成（2026-10-02），B 半未開始 |
 | 3 | [WP5](WP5-user-state-isolation.md) | 使用者狀態與隔離、每使用者成本 | 資料不外洩、每人成本算得出來 | 高 | 高 | 5 | WP0、一個最小的 Runtime（WP1 步驟 1） | A | Kais | ⬜ |
 | 4 | [WP1](WP1-runtime-session.md) | Runtime 冷啟動與「一人一實體」 | microVM 撐不撐得住對話體驗？V2 值不值得？ | 中 | 高 | 5 | WP0 | A | Kais | ⬜ |
 | ~~5~~ | ~~[WP4](WP4-browser-takeover.md)~~ | ~~Browser 接手登入~~ | ~~Muse 式的接手流程能不能在 AgentCore 做出來~~ | ~~中~~ | ~~中~~ | ~~8~~ | ~~WP0~~ | — | 其他工程師 | ✅ 已由其他工程師完成 |
@@ -175,6 +175,6 @@ execution role 不給 Browser 權限；Gateway + Policy 為選配，需要時才
 | 使用者 token 進到 VM，被濫用時最多只能做該使用者本來能做的事 | `[推測]` | WP5 |
 | Live View + `take_control` 能做出「使用者登入後交還給 agent」 | `[官方已寫]` 機制、`[推測]` 流程 | WP4（已完成）；改由 server 主導後由 WP2 #8 重新驗證 |
 | Memory `actorId` 加 IAM 能擋住跨使用者讀取；episodic reflection 不會跨使用者 | `[矛盾]` / `[推測]` | WP5 |
-| USAGE_LOGS 可以分攤每位使用者的成本 | `[官方已寫]`，未實證 | WP0、WP5 |
+| USAGE_LOGS 可以分攤每位使用者的成本 | `[官方已寫]`；WP0 已實證可依 session 分攤 | WP0、WP5 |
 
 相關研究庫篇章：[01 Runtime](../01-runtime/)、[03 Gateway](../03-gateway/)、[05 內建工具](../05-built-in-tools/)、[08 Policy](../08-policy/)、[02 Memory](../02-memory/)、[06 Observability](../06-observability/)、[00 Harness vs Runtime](../00-overview/harness-vs-runtime.md)、[00 自建 vs 採用](../00-overview/build-vs-buy.md)。
